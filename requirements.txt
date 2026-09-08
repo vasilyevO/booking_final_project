@@ -1,0 +1,14 @@
+asgiref==3.12.1
+Django==6.1.1
+django-filter==26.1
+djangorestframework==3.18.1
+drf-yasg==1.21.15
+inflection==0.5.1
+mysqlclient==2.2.8
+packaging==26.3
+python-dotenv==1.2.3
+pytz==2026.3.post1
+PyYAML==6.0.3
+sqlparse==0.6.0
+tzdata==2026.3
+uritemplate==4.2.0
