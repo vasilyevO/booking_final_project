@@ -40,7 +40,9 @@ class SearchQuery(TimeStampedModel):
 class ListingView(TimeStampedModel):
     """
     RU: Факт просмотра объявления, дедуплицированный по дню.
+        История изменений не нужна: записи только создаются.
     EN: A listing view event, de-duplicated per day.
+        No change history needed: rows are only ever created.
     """
 
     listing = models.ForeignKey(
@@ -54,7 +56,7 @@ class ListingView(TimeStampedModel):
         related_name="listing_views",
     )
     session_key = models.CharField(max_length=40, blank=True)
-    viewed_on = models.DateField(default=timezone.localdate, db_index=True)
+    viewed_on = models.DateField(default=timezone.localdate)
 
     class Meta:
         verbose_name = "Просмотр объявления"

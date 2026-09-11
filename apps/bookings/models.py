@@ -7,8 +7,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 
-from core.models import TimeStampedModel
+from core.models import PublicIdModel, TimeStampedModel
+from core.validators import validate_not_own_listing
 
 
 class BookingStatus(models.TextChoices):
@@ -77,7 +79,7 @@ class BookingQuerySet(models.QuerySet):
         return self.filter(end_date__gte=timezone.localdate())
 
 
-class Booking(TimeStampedModel):
+class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     """
     RU: Бронирование жилья на интервал [start_date, end_date),
         где день выезда не входит в занятый период.
@@ -98,21 +100,31 @@ class Booking(TimeStampedModel):
         related_name="bookings",
     )
 
-    start_date = models.DateField()
-    end_date = models.DateField()
-    guests = models.PositiveSmallIntegerField(default=1)
-
+    start_date = models.DateField(
+        verbose_name="Заезд",
+        help_text="Check-in date, inclusive. Format YYYY-MM-DD",
+    )
+    end_date = models.DateField(
+        verbose_name="Выезд",
+        help_text="Check-out date, exclusive: this night is not charged",
+    )
+    guests = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name="Гостей",
+        help_text="Number of guests, at least 1",
+    )
     status = models.CharField(
         max_length=16,
         choices=BookingStatus.choices,
         default=BookingStatus.PENDING,
-        db_index=True,
+        verbose_name="Статус",
+        help_text="Lifecycle status. Changed only through the booking actions",
     )
 
-    # RU: снимки на момент бронирования — цена объявления и его заголовок
-    #     могут измениться или объявление может быть удалено.
+    # RU: снимки на момент бронирования — цена и заголовок объявления
+    #     могут измениться, а объявление может быть удалено.
     # EN: snapshots taken at booking time — the listing price and title
-    #     may change, or the listing may be removed altogether.
+    #     may change, and the listing may be removed altogether.
     price_per_night_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
     listing_title_snapshot = models.CharField(max_length=200)
@@ -122,25 +134,50 @@ class Booking(TimeStampedModel):
 
     objects = BookingQuerySet.as_manager()
 
+    # RU: смена статуса обязана идти через save(); queryset.update()
+    #     не вызывает сигналы и в историю не попадёт.
+    # EN: status changes must go through save(); queryset.update() fires
+    #     no signals and would bypass the history.
+    history = HistoricalRecords()
+
     class Meta:
         verbose_name = "Бронирование"
         verbose_name_plural = "Бронирования"
         ordering = ("-created_at", "-id")
+        permissions = [
+            ("confirm_booking", "Can confirm booking"),
+            ("reject_booking", "Can reject booking"),
+            ("cancel_booking", "Can cancel booking"),
+        ]
+
         constraints = [
             models.CheckConstraint(
-                condition=Q(end_date__gt=F("start_date")),
-                name="booking_end_after_start",
+                condition=Q(end_date__gt=F("start_date")), name="booking_end_after_start"
             ),
             models.CheckConstraint(
                 condition=Q(total_price__gte=0), name="booking_total_price_gte_zero"
             ),
+            models.CheckConstraint(
+                condition=Q(guests__gte=1), name="booking_guests_gte_one"
+            ),
+            models.CheckConstraint(
+                condition=Q(price_per_night_snapshot__gt=0),
+                name="booking_snapshot_price_positive",
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=BookingStatus.values), name="booking_status_valid"
+            ),
         ]
+
         indexes = [
+            # RU: единственный оставшийся индекс — ведущий listing селективен,
+            #     левый префикс обслуживает и поиск только по объявлению.
+            # EN: the only remaining index — the leading listing column is
+            #     selective and its prefix also serves listing-only lookups.
             models.Index(
                 fields=("listing", "start_date", "end_date"),
                 name="booking_listing_dates_idx",
             ),
-            models.Index(fields=("tenant", "status"), name="booking_tenant_status_idx"),
         ]
 
     def __str__(self) -> str:
@@ -163,10 +200,10 @@ class Booking(TimeStampedModel):
 
     def is_cancellable(self) -> bool:
         """
-        RU: Не истёк ли срок бесплатной отмены. Порог берётся из настроек,
+        RU: Не истёк ли срок отмены. Порог берётся из настроек,
             чтобы правило не было зашито в код.
-        EN: Whether the cancellation deadline has not passed. The threshold comes
-            from settings so the rule is not hard-coded.
+        EN: Whether the cancellation deadline has not passed. The threshold
+            comes from settings so the rule is not hard-coded.
         """
         deadline = self.start_date - timedelta(
             days=getattr(settings, "BOOKING_CANCELLATION_DAYS", 1)
@@ -176,20 +213,36 @@ class Booking(TimeStampedModel):
     def clean(self) -> None:
         """
         RU: Правила, невыразимые CHECK-ограничением: «сегодня» недетерминировано,
-            а пересечение требует запроса к другим строкам.
+            пересечение требует запроса к другим строкам, а запрет на своё жильё
+            сравнивает колонки двух таблиц.
         EN: Rules a CHECK constraint cannot express: "today" is non-deterministic,
-            and overlap detection requires querying other rows.
+            overlap detection queries other rows, and the own-listing ban compares
+            columns across two tables.
         """
         errors: dict[str, str] = {}
-        if self.start_date and self.start_date < timezone.localdate():
+
+        # RU: дата в прошлом запрещена ТОЛЬКО при создании. Иначе отменить
+        #     или завершить старую бронь стало бы невозможно.
+        # EN: a past date is rejected ONLY on creation. Otherwise cancelling
+        #     or completing an old booking would become impossible.
+        if self._state.adding and self.start_date and self.start_date < timezone.localdate():
             errors["start_date"] = "Нельзя бронировать в прошлом."
+
         if self.start_date and self.end_date and self.end_date <= self.start_date:
             errors["end_date"] = "Дата выезда должна быть позже даты заезда."
+
+        if self.listing_id and self.tenant_id:
+            try:
+                validate_not_own_listing(self.listing, self.tenant)
+            except ValidationError as exc:
+                errors["tenant"] = exc.messages[0]
+
         if self.listing_id and self.start_date and self.end_date:
             conflicts = Booking.objects.overlapping(
                 self.listing, self.start_date, self.end_date
             ).exclude(pk=self.pk)
             if conflicts.exists():
                 errors["__all__"] = "Эти даты уже заняты."
+
         if errors:
             raise ValidationError(errors)

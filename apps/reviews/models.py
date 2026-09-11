@@ -6,28 +6,33 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 
-from core.models import TimeStampedModel
+from core.models import SoftDeleteModel, TimeStampedModel
 
 
-class Review(TimeStampedModel):
+class Review(TimeStampedModel, SoftDeleteModel):
     """
     RU: Отзыв об объявлении. Привязан к бронированию, поэтому оставить отзыв
-        без факта аренды структурно невозможно.
-    EN: A listing review. Bound to a booking, so leaving a review without an
-        actual stay is structurally impossible.
+        без факта аренды структурно невозможно. Удаление только мягкое, чтобы
+        владелец не мог обнулить репутацию, удалив объявление и создав новое.
+    EN: A listing review. Bound to a booking, so a review without an actual stay
+        is structurally impossible. Deletion is soft only, so an owner cannot
+        reset their reputation by removing a listing and recreating it.
     """
 
-    # RU: OneToOne гарантирует один отзыв на одну аренду.
-    # EN: OneToOne guarantees a single review per stay.
+    # RU: PROTECT вместо CASCADE — удаление брони или объявления не должно
+    #     уносить отзывы вместе с собой.
+    # EN: PROTECT instead of CASCADE — deleting a booking or a listing must not
+    #     take the reviews down with it.
     booking = models.OneToOneField(
-        "bookings.Booking", on_delete=models.CASCADE, related_name="review"
+        "bookings.Booking", on_delete=models.PROTECT, related_name="review"
     )
     # RU: денормализация ради быстрой выборки «все отзывы объявления».
     # EN: denormalised for fast "all reviews of a listing" queries.
     listing = models.ForeignKey(
         "listings.Listing",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="reviews",
         editable=False,
     )
@@ -44,14 +49,24 @@ class Review(TimeStampedModel):
     # EN: validators produce a readable 400 in DRF, while the CheckConstraint
     #     guards against bulk_create, which skips validation.
     rating = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)]
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        verbose_name="Оценка",
+        help_text="Rating from 1 to 5",
     )
-    text = models.TextField(max_length=2000, blank=True)
+    text = models.TextField(
+        max_length=2000,
+        blank=True,
+        verbose_name="Текст",
+        help_text="Free-form review, up to 2000 characters",
+    )
+
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
         ordering = ("-created_at", "-id")
+        base_manager_name = "all_objects"
         constraints = [
             models.CheckConstraint(
                 condition=Q(rating__gte=1) & Q(rating__lte=5),

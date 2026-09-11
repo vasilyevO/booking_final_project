@@ -1,0 +1,26 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: booking_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      # RU: пробрасываем порт наружу — Django пока запускается на хосте
+      # EN: expose the port — Django still runs on the host for now
+      - "3306:3306"
+    volumes:
+      # RU: именованный том, иначе данные исчезнут вместе с контейнером
+      # EN: named volume, otherwise data dies with the container
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  mysql_data:

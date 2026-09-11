@@ -4,17 +4,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from core.models import TimeStampedModel
-
-
-class UserRole(models.TextChoices):
-    """
-    RU: Роли пользователя: арендатор и арендодатель.
-    EN: User roles: tenant and landlord.
-    """
-
-    TENANT = "tenant", _("Арендатор")
-    LANDLORD = "landlord", _("Арендодатель")
+from core.models import PublicIdModel, TimeStampedModel
 
 
 class UserManager(BaseUserManager):
@@ -39,8 +29,10 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email: str, password: str | None = None, **extra_fields) -> "User":
         """
-        RU: Создаёт обычного пользователя.
-        EN: Create a regular user.
+        RU: Создаёт обычного пользователя. Права выдаются добавлением в группу,
+            а не полем модели.
+        EN: Creates a regular user. Permissions come from group membership,
+            not from a model field.
         """
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
@@ -49,34 +41,27 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email: str, password: str | None = None, **extra_fields) -> "User":
         """
         RU: Создаёт суперпользователя для админки.
-        EN: Create a superuser for the admin site.
+        EN: Creates a superuser for the admin site.
         """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("role", UserRole.LANDLORD)
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True")
         return self._create_user(email, password, **extra_fields)
 
 
-class User(AbstractUser, TimeStampedModel):
+class User(AbstractUser, TimeStampedModel, PublicIdModel):
     """
-    RU: Пользователь системы. Заменяет стандартную модель Django,
-        поэтому объявлена до первой миграции.
-    EN: Application user. Replaces Django's default model, therefore
-        declared before the first migration.
+    RU: Пользователь системы. Роли не хранятся в модели — они выражены
+        членством в группах Django, чтобы источник истины был один.
+    EN: Application user. Roles are not stored on the model — they are
+        expressed through Django group membership, keeping one source of truth.
     """
 
     # RU: username убран — идентификатором служит email.
     # EN: username removed — email is the identifier.
     username = None
     email = models.EmailField(_("email"), unique=True)
-    role = models.CharField(
-        max_length=16,
-        choices=UserRole.choices,
-        default=UserRole.TENANT,
-        db_index=True,
-    )
     # RU: для строковых полей используем blank="" вместо null.
     # EN: for string fields prefer blank="" over null.
     phone = models.CharField(max_length=32, blank=True)
@@ -93,19 +78,3 @@ class User(AbstractUser, TimeStampedModel):
 
     def __str__(self) -> str:
         return self.email
-
-    @property
-    def is_landlord(self) -> bool:
-        """
-        RU: True, если пользователь может публиковать объявления.
-        EN: True if the user is allowed to publish listings.
-        """
-        return self.role == UserRole.LANDLORD
-
-    @property
-    def is_tenant(self) -> bool:
-        """
-        RU: True, если пользователь выступает арендатором.
-        EN: True if the user acts as a tenant.
-        """
-        return self.role == UserRole.TENANT

@@ -63,7 +63,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "django_filters",
-    "drf_yasg",
+
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+
+    "drf_spectacular",
 # local
     "apps.users",
     "apps.listings",
@@ -81,6 +85,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "simple_history.middleware.HistoryRequestMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -102,7 +107,22 @@ TEMPLATES = [
         },
     },
 ]
+#------------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
+    "PAGE_SIZE": 20,
+}
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Booking API",
+    "DESCRIPTION": "Housing rental booking service",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+   #----------------------------------------------------
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
