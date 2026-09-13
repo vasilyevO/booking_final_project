@@ -2,61 +2,51 @@ from __future__ import annotations
 
 from datetime import date
 
-from django.core.exceptions import ValidationError
 from django.db import transaction
-
 from apps.listings.models import Listing
-from core.validators import validate_not_own_listing
 from .models import Booking, BookingStatus
 
 
 @transaction.atomic
 def create_booking(
-    *,
-    tenant,
-    listing_id: int,
-    start_date: date,
-    end_date: date,
-    guests: int = 1,
+    *, tenant, listing_id: int, start_date, end_date,
+    guests: int = 1, discount_percent: int = 0,
 ) -> Booking:
     """
-    RU: Создаёт бронирование атомарно, исключая гонку двух параллельных запросов
-        на одни и те же даты.
-    EN: Creates a booking atomically, preventing a race between two concurrent
-        requests for the same dates.
+    RU: Отвечает только за транзакцию и блокировку. Проверки «не своё жильё»
+        и «даты свободны» выполняет Booking.clean() через full_clean()
+        внутри той же критической секции — дублировать их здесь незачем.
+    EN: Responsible only for the transaction and the lock. The "not your own
+        listing" and "dates are free" checks run in Booking.clean() via
+        full_clean() inside the same critical section — no need to repeat them.
     """
-    # RU: select_for_update блокирует строку объявления до конца транзакции.
-    # EN: select_for_update locks the listing row until the transaction ends.
     listing = Listing.objects.select_for_update().get(pk=listing_id, is_active=True)
 
-    validate_not_own_listing(listing, tenant)
-
-    if Booking.objects.overlapping(listing, start_date, end_date).exists():
-        raise ValidationError("Эти даты уже заняты.")
-
-    nights = (end_date - start_date).days
-    return Booking.objects.create(
+    booking = Booking(
         listing=listing,
         tenant=tenant,
         start_date=start_date,
         end_date=end_date,
         guests=guests,
+        discount_percent=discount_percent,
         status=BookingStatus.PENDING,
         price_per_night_snapshot=listing.price_per_night,
-        total_price=listing.price_per_night * nights,
         listing_title_snapshot=listing.title,
     )
+    # RU: сумма считается методом модели — формула живёт в одном месте
+    # EN: the total comes from a model method — the formula lives in one place
+    booking.total_price = booking.calculate_total()
+    booking.save()
+    return booking
 
 
 def change_status(booking: Booking, new_status: str) -> Booking:
     """
-    RU: Меняет статус через save(), а не queryset.update() — иначе изменение
-        не попадёт ни в историю, ни в updated_at.
-    EN: Changes the status via save() rather than queryset.update() — otherwise
-        the change would reach neither the history nor updated_at.
+    RU: Меняет статус через save(): нужны сигналы simple-history и проверка
+        перехода в clean(). queryset.update() обошёл бы оба.
+    EN: Changes the status via save(): simple-history signals and the clean()
+        transition check are both required. queryset.update() would skip both.
     """
-    if not booking.can_transition_to(new_status):
-        raise ValidationError(f"Переход {booking.status} → {new_status} недопустим.")
     booking.status = new_status
     booking.save(update_fields=["status", "updated_at"])
     return booking

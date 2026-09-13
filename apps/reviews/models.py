@@ -8,10 +8,10 @@ from django.db.models import Q
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
-from core.models import SoftDeleteModel, TimeStampedModel
+from core.models import SoftDeleteModel, TimeStampedModel, ValidatedModel
 
 
-class Review(TimeStampedModel, SoftDeleteModel):
+class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
     """
     RU: Отзыв об объявлении. Привязан к бронированию, поэтому оставить отзыв
         без факта аренды структурно невозможно. Удаление только мягкое, чтобы

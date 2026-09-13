@@ -36,17 +36,59 @@ class SearchQuery(TimeStampedModel):
     def __str__(self) -> str:
         return self.keyword
 
+class ListingStats(models.Model):
+    """
+    RU: Агрегированные счётчики объявления. Отдельная таблица, потому что
+        просмотры — другой бизнес-процесс: они пишутся на порядки чаще,
+        не нуждаются в истории изменений и не должны блокировать оформление
+        брони, которое держит строку listings_listing под select_for_update.
+    EN: Aggregated listing counters. A separate table because views are a
+        different business process: written orders of magnitude more often,
+        need no change history, and must not block booking creation, which
+        holds the listings_listing row under select_for_update.
+    """
+
+    listing = models.OneToOneField(
+        "listings.Listing",
+        # RU: PROTECT — статистика переживает оперативные данные
+        # EN: PROTECT — analytics outlives the operational data
+        on_delete=models.PROTECT,
+        related_name="stats",
+        primary_key=True,
+    )
+    views_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Просмотров",
+        help_text="De-duplicated views, one per user per day",
+    )
+    bookings_count = models.PositiveIntegerField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Статистика объявления"
+        verbose_name_plural = "Статистика объявлений"
+        indexes = [
+            # RU: под сортировку «сначала популярные»
+            # EN: supports the "most popular first" ordering
+            models.Index(fields=("-views_count",), name="stats_views_desc_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"stats of listing {self.listing_id}"
+
 
 class ListingView(TimeStampedModel):
     """
-    RU: Факт просмотра объявления, дедуплицированный по дню.
-        История изменений не нужна: записи только создаются.
-    EN: A listing view event, de-duplicated per day.
-        No change history needed: rows are only ever created.
+    RU: Журнал просмотров, только на добавление. Дедуплицирован по дню.
+    EN: Append-only view log, de-duplicated per day.
     """
 
     listing = models.ForeignKey(
-        "listings.Listing", on_delete=models.CASCADE, related_name="view_records"
+        "listings.Listing",
+        # RU: CASCADE убран: аналитика не должна исчезать вместе с объявлением
+        # EN: CASCADE removed: analytics must not vanish with the listing
+        on_delete=models.PROTECT,
+        related_name="view_records",
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

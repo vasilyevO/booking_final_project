@@ -57,12 +57,15 @@ class ListingListSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_cover_photo(self, obj: Listing) -> str | None:
         """
-        RU: Обложка — первое фото по position. Требует prefetch_related("photos"),
-            иначе запрос на каждое объявление.
-        EN: The cover is the first photo by position. Requires
-            prefetch_related("photos"), otherwise one query per listing.
+        RU: Обложка — фото с наименьшим position. Полагается на
+            prefetch_related("photos") из ListingQuerySet.with_related():
+            без него каждое объявление в списке даст свой запрос.
+        EN: The cover is the photo with the lowest position. Relies on
+            prefetch_related("photos") from ListingQuerySet.with_related():
+            without it every listing in the list costs a query.
         """
-        photo = next(iter(obj.photos.all()), None)
+        photos = obj.photos.all()
+        photo = photos[0] if photos else None
         return photo.image.url if photo else None
 
 
@@ -73,6 +76,13 @@ class ListingDetailSerializer(ListingListSerializer):
     """
 
     photos = ListingPhotoSerializer(many=True, read_only=True)
+    # RU: счётчик живёт в analytics.ListingStats — отдельная таблица, чтобы
+    #     просмотры не конкурировали за строку объявления с оформлением броней.
+    # EN: the counter lives in analytics.ListingStats — a separate table, so
+    #     views do not contend for the listing row with booking creation.
+    views_count = serializers.IntegerField(
+        source="stats.views_count", read_only=True, default=0
+    )
 
     class Meta(ListingListSerializer.Meta):
         fields = ListingListSerializer.Meta.fields + (
@@ -105,10 +115,12 @@ class ListingWriteSerializer(serializers.ModelSerializer):
 
     def validate_city(self, value: str) -> str:
         """
-        RU: Нормализуем город: иначе «Köln», «köln» и « Köln » станут
-            тремя разными значениями в фильтре и в индексе.
-        EN: Normalise the city, otherwise "Köln", "köln" and " Köln " become
-            three distinct values in filters and in the index.
+        RU: Убираем лишние пробелы у отображаемого значения. Свёрнутую форму
+            для поиска считает Listing.save() в поле city_normalized —
+            приводить city к нижнему регистру нельзя, оно видно пользователю.
+        EN: Trim the displayed value only. The folded search form is computed by
+            Listing.save() into city_normalized — city itself must not be
+            lowercased, it is shown to the user.
         """
         return value.strip()
 

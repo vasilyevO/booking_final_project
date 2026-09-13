@@ -4,12 +4,14 @@ from datetime import date, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
+from decimal import ROUND_HALF_UP, Decimal
 
-from core.models import PublicIdModel, TimeStampedModel
+from core.models import PublicIdModel, TimeStampedModel, ValidatedModel
 from core.validators import validate_not_own_listing
 
 
@@ -110,8 +112,17 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     )
     guests = models.PositiveSmallIntegerField(
         default=1,
+        # RU: валидатора не было — ноль проходил full_clean() и падал уже
+        #     на CHECK в БД, отдавая клиенту 500 вместо 400.
+        # EN: the validator was missing — zero passed full_clean() and failed on
+        #     the database CHECK, returning 500 to the client instead of 400.
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        error_messages={
+            "invalid": "Количество гостей должно быть больше нуля.",
+            "null": "Укажите количество гостей.",
+        },
         verbose_name="Гостей",
-        help_text="Number of guests, at least 1",
+        help_text="Number of guests, from 1 to 20",
     )
     status = models.CharField(
         max_length=16,
@@ -126,7 +137,20 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     # EN: snapshots taken at booking time — the listing price and title
     #     may change, and the listing may be removed altogether.
     price_per_night_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
-    total_price = models.DecimalField(max_digits=12, decimal_places=2)
+
+    discount_percent = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MaxValueValidator(100)],
+        verbose_name="Скидка, %",
+        help_text="Discount applied at booking time, 0 to 100 percent",
+    )
+    total_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        editable=False,
+        verbose_name="Итого",
+        help_text="Agreed contract amount. Frozen at booking time, never recomputed later",
+    )
     listing_title_snapshot = models.CharField(max_length=200)
 
     confirmed_at = models.DateTimeField(null=True, blank=True, editable=False)
@@ -151,21 +175,39 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         ]
 
         constraints = [
+            # RU: violation_error_message (Django 4.1+) превращает нарушение
+            #     CHECK в нормальный ValidationError на этапе full_clean().
+            # EN: violation_error_message (Django 4.1+) turns a CHECK violation
+            #     into a proper ValidationError during full_clean().
             models.CheckConstraint(
-                condition=Q(end_date__gt=F("start_date")), name="booking_end_after_start"
+                condition=Q(end_date__gt=F("start_date")),
+                name="booking_end_after_start",
+                violation_error_message="Дата выезда должна быть позже даты заезда.",
             ),
             models.CheckConstraint(
-                condition=Q(total_price__gte=0), name="booking_total_price_gte_zero"
+                condition=Q(guests__gte=1),
+                name="booking_guests_gte_one",
+                violation_error_message="Количество гостей должно быть не меньше одного.",
             ),
             models.CheckConstraint(
-                condition=Q(guests__gte=1), name="booking_guests_gte_one"
+                condition=Q(total_price__gte=0),
+                name="booking_total_price_gte_zero",
+                violation_error_message="Итоговая сумма не может быть отрицательной.",
             ),
             models.CheckConstraint(
                 condition=Q(price_per_night_snapshot__gt=0),
                 name="booking_snapshot_price_positive",
+                violation_error_message="Цена за ночь должна быть положительной.",
             ),
             models.CheckConstraint(
-                condition=Q(status__in=BookingStatus.values), name="booking_status_valid"
+                condition=Q(status__in=BookingStatus.values),
+                name="booking_status_valid",
+                violation_error_message="Недопустимый статус бронирования.",
+            ),
+            models.CheckConstraint(
+                condition=Q(discount_percent__lte=100),
+                name="booking_discount_max_100",
+                violation_error_message="Скидка не может превышать 100 процентов.",
             ),
         ]
 
@@ -180,16 +222,48 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
             ),
         ]
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        """
+        RU: Запоминает статус, каким он был в БД, чтобы clean() мог проверить
+            допустимость перехода из любой точки, а не только из сервиса.
+        EN: Remembers the status as stored, so clean() can validate the
+            transition from anywhere, not only from the service layer.
+        """
+        instance = super().from_db(db, field_names, values)
+        instance._original_status = instance.status
+        return instance
+
     def __str__(self) -> str:
         return f"{self.listing_title_snapshot}: {self.start_date}–{self.end_date}"
 
     @property
     def nights(self) -> int:
         """
-        RU: Количество оплачиваемых ночей.
-        EN: Number of chargeable nights.
+        RU: Число оплачиваемых ночей. Чистая производная от двух дат —
+            поэтому свойство, а не колонка.
+        EN: Number of chargeable nights. A pure derivation of two dates,
+            hence a property rather than a column.
         """
         return (self.end_date - self.start_date).days
+
+    def calculate_total(self) -> Decimal:
+        """
+        RU: Единственное место, где живёт формула суммы. Вызывается из сервиса
+            при создании; сохранённое значение потом не пересчитывается —
+            это сумма договора, а не текущая цена.
+        EN: The single place where the total formula lives. Called by the
+            service on creation; the stored value is never recomputed —
+            it is the contract amount, not the current price.
+        """
+        base = self.price_per_night_snapshot * self.nights
+        discounted = base * (Decimal(100) - Decimal(self.discount_percent)) / Decimal(100)
+        # RU: quantize обязателен — без него в БД уйдёт число с десятком знаков,
+        #     MySQL округлит его по-своему, и ответ API разойдётся с базой.
+        # EN: quantize is mandatory — without it a many-digit number reaches the
+        #     database, MySQL rounds it its own way, and the API response
+        #     diverges from the stored value.
+        return discounted.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     def can_transition_to(self, new_status: str) -> bool:
         """
@@ -210,26 +284,26 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         )
         return self.status in BLOCKING_STATUSES and timezone.localdate() <= deadline
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # RU: после записи текущий статус становится исходным
+        # EN: after the write the current status becomes the original one
+        self._original_status = self.status
+
     def clean(self) -> None:
         """
-        RU: Правила, невыразимые CHECK-ограничением: «сегодня» недетерминировано,
-            пересечение требует запроса к другим строкам, а запрет на своё жильё
-            сравнивает колонки двух таблиц.
-        EN: Rules a CHECK constraint cannot express: "today" is non-deterministic,
-            overlap detection queries other rows, and the own-listing ban compares
-            columns across two tables.
+        RU: Правила, невыразимые CHECK-ограничением.
+        EN: Rules a CHECK constraint cannot express.
         """
         errors: dict[str, str] = {}
+        today = timezone.localdate()
 
-        # RU: дата в прошлом запрещена ТОЛЬКО при создании. Иначе отменить
+        # RU: дата в прошлом запрещена ТОЛЬКО при создании, иначе отменить
         #     или завершить старую бронь стало бы невозможно.
-        # EN: a past date is rejected ONLY on creation. Otherwise cancelling
-        #     or completing an old booking would become impossible.
-        if self._state.adding and self.start_date and self.start_date < timezone.localdate():
+        # EN: a past date is rejected ONLY on creation, otherwise cancelling or
+        #     completing an old booking would become impossible.
+        if self._state.adding and self.start_date and self.start_date < today:
             errors["start_date"] = "Нельзя бронировать в прошлом."
-
-        if self.start_date and self.end_date and self.end_date <= self.start_date:
-            errors["end_date"] = "Дата выезда должна быть позже даты заезда."
 
         if self.listing_id and self.tenant_id:
             try:
@@ -243,6 +317,17 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
             ).exclude(pk=self.pk)
             if conflicts.exists():
                 errors["__all__"] = "Эти даты уже заняты."
+
+        original = getattr(self, "_original_status", None)
+        if original is not None and original != self.status:
+            if self.status not in STATUS_TRANSITIONS[original]:
+                errors["status"] = f"Переход {original} → {self.status} недопустим."
+            # RU: завершить бронь можно только после выезда — иначе арендатор
+            #     пометит её завершённой и оставит отзыв досрочно.
+            # EN: a booking may only be completed after check-out, otherwise a
+            #     tenant could complete it early and post a review.
+            elif self.status == BookingStatus.COMPLETED and self.end_date > today:
+                errors["status"] = "Нельзя завершить бронь до даты выезда."
 
         if errors:
             raise ValidationError(errors)

@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     "drf_spectacular",
+    "simple_history",
 # local
     "apps.users",
     "apps.listings",
@@ -110,6 +111,18 @@ TEMPLATES = [
 #------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # RU: без этой строки simplejwt установлен, но не используется —
+    #     аутентификация осталась бы сессионной.
+    # EN: without this line simplejwt is installed but unused —
+    #     authentication would fall back to sessions.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.OrderingFilter",
+        "rest_framework.filters.SearchFilter",
+    ],
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
@@ -178,20 +191,24 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"   # сюда соберёт collectstatic в Docker
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# RU: за сколько дней до заезда ещё можно отменить бронь — читает
+#     Booking.is_cancellable(), чтобы правило не было зашито в код.
+# EN: how many days before check-in a booking may still be cancelled —
+#     read by Booking.is_cancellable() so the rule is not hard-coded.
+BOOKING_CANCELLATION_DAYS = int(os.getenv("BOOKING_CANCELLATION_DAYS", "1"))
+
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-EMAIL_BACKEND = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# RU: EMAIL_BACKEND — строка с путём к классу, а не словарь, как DATABASES.
+# EN: EMAIL_BACKEND is a dotted path string, not a dict like DATABASES.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

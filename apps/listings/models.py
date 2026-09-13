@@ -12,7 +12,8 @@ from django.db.models.expressions import RawSQL
 import uuid
 from pathlib import Path
 
-from core.models import PublicIdModel, SoftDeleteModel, TimeStampedModel
+from core.models import PublicIdModel, SoftDeleteModel, TimeStampedModel, ValidatedModel
+from core.text import normalize_search_text
 
 
 class PropertyType(models.TextChoices):
@@ -50,45 +51,44 @@ class ListingQuerySet(models.QuerySet):
         """
         return self.filter(is_active=True)
 
-    def by_owner(self, user) -> "ListingQuerySet":
-        """
-        RU: Объявления конкретного владельца.
-        EN: Listings owned by the given user.
-        """
-        return self.filter(owner=user)
+def by_owner(self, user) -> "ListingQuerySet":
+    """
+    RU: Объявления конкретного владельца.
+    EN: Listings owned by the given user.
+    """
+    return self.filter(owner=user)
 
-    def search(self, term: str) -> "ListingQuerySet":
-        """
-        RU: Полнотекстовый поиск по FULLTEXT-индексу с сортировкой по релевантности.
-            Слова короче innodb_ft_min_token_size (по умолчанию 3) не индексируются.
-        EN: Full-text search over the FULLTEXT index, ordered by relevance.
-            Words shorter than innodb_ft_min_token_size (3 by default) are not indexed.
-        """
-        if not term:
-            return self
-        # RU: параметр передаём отдельно — форматирование строки было бы инъекцией
-        # EN: pass the parameter separately — string formatting would be an injection
-        relevance = RawSQL("MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)", (term,))
-        return self.annotate(relevance=relevance).filter(relevance__gt=0)
+# RU: FULLTEXT не индексирует слова короче innodb_ft_min_token_size
+# EN: FULLTEXT does not index words shorter than innodb_ft_min_token_size
+MIN_FULLTEXT_TOKEN = 3
 
-    def search_fallback(self, term: str) -> "ListingQuerySet":
-        """
-        RU: Запасной путь для коротких слов: LIKE '%...%', индекс не используется.
-        EN: Fallback for short words: LIKE '%...%', no index is used.
-        """
-        if not term:
-            return self
+def search(self, term: str) -> "ListingQuerySet":
+    """
+    RU: Полнотекстовый поиск по FULLTEXT-индексу с сортировкой по
+        релевантности. Для коротких слов автоматически падает на LIKE,
+        который индекс не использует, но хотя бы что-то находит.
+    EN: Full-text search over the FULLTEXT index, ordered by relevance.
+        Short words automatically fall back to LIKE, which cannot use an
+        index but at least returns something.
+    """
+    term = (term or "").strip()
+    if not term:
+        return self
+
+    if len(term) < self.MIN_FULLTEXT_TOKEN:
         return self.filter(Q(title__icontains=term) | Q(description__icontains=term))
 
-    def with_related(self) -> "ListingQuerySet":
-        """
-        RU: Снимает проблему N+1: select_related для ForeignKey,
-            prefetch_related для обратных связей.
-        EN: Solves the N+1 problem: select_related for foreign keys,
-            prefetch_related for reverse relations.
-        """
-        return self.select_related("owner").prefetch_related("reviews")
+    # RU: параметр передаём отдельно — форматирование строки было бы инъекцией
+    # EN: pass the parameter separately — string formatting would be injection
+    relevance = RawSQL("MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)", (term,))
+    return self.annotate(relevance=relevance).filter(relevance__gt=0)
 
+def with_related(self) -> "ListingQuerySet":
+    """
+    RU: Снимает N+1 для карточек списка: владелец, фото и статистика.
+    EN: Removes N+1 for list cards: owner, photos and stats.
+    """
+    return self.select_related("owner", "stats").prefetch_related("photos")
 
 class ListingManager(models.Manager.from_queryset(ListingQuerySet)):
     """
@@ -100,7 +100,7 @@ class ListingManager(models.Manager.from_queryset(ListingQuerySet)):
         return super().get_queryset().filter(deleted_at__isnull=True)
 
 
-class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel):
+class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
     """
     RU: Объявление о сдаче жилья.
     EN: Rental property listing.
@@ -110,7 +110,15 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel):
     # EN: reference settings.AUTH_USER_MODEL instead of importing User directly.
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        # RU: CASCADE был опасен: удаление пользователя каскадно сносило его
+        #     объявления, но у объявлений PROTECT от броней — каскад падал
+        #     посередине с ProtectedError. Пользователей деактивируем
+        #     (is_active=False), а не удаляем.
+        # EN: CASCADE was dangerous: deleting a user cascaded into their
+        #     listings, which are PROTECTed by bookings — the cascade failed
+        #     halfway with ProtectedError. Users are deactivated
+        #     (is_active=False) rather than deleted.
+        on_delete=models.PROTECT,
         related_name="listings",
         verbose_name="Владелец",
     )
@@ -125,15 +133,37 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel):
     )
     city = models.CharField(
         max_length=100,
-        db_index=True,
+        # RU: db_index убран — city уже ведущая колонка составных индексов,
+        #     левый префикс обслуживает поиск только по городу.
+        # EN: db_index dropped — city already leads the composite indexes,
+        #     whose leftmost prefix serves city-only lookups.
         verbose_name="Город",
-        help_text="City in Germany, e.g. Köln. Stored normalised for search",
+        help_text="City as displayed, e.g. Köln",
+    )
+    city_normalized = models.CharField(
+        max_length=100,
+        editable=False,
+        db_index=True,
+        verbose_name="Город (поиск)",
+        help_text="Folded lowercase form used for search: Köln, Koeln and koln all become koeln",
     )
     district = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="Район",
         help_text="District or quarter, optional",
+    )
+    address = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Адрес",
+        help_text="Street and house number, e.g. Hohe Straße 12. Optional",
+    )
+    postal_code = models.CharField(
+        max_length=16,
+        blank=True,
+        verbose_name="Индекс",
+        help_text="Postal code, e.g. 50667. Optional",
     )
     price_per_night = models.DecimalField(
         max_digits=10,
@@ -158,14 +188,22 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel):
         verbose_name="Активно",
         help_text="Inactive listings are hidden from search but keep their bookings",
     )
-    views_count = models.PositiveIntegerField(default=0, editable=False)
 
     objects = ListingManager()
     all_objects = models.Manager.from_queryset(ListingQuerySet)()
 
-    # RU: views_count исключён — иначе каждый просмотр породит запись истории
-    # EN: views_count excluded — otherwise every view would create a history row
-    history = HistoricalRecords(excluded_fields=["views_count"])
+    # RU: поле views_count удалено. UPDATE счётчика шёл по той же строке,
+    #     которую create_booking() держит под select_for_update — просмотры
+    #     конкурировали с оформлением броней за одну блокировку.
+    #     Счётчик переехал в analytics.ListingStats.
+    # EN: the views_count field is gone. Its UPDATE hit the very row that
+    #     create_booking() holds under select_for_update — views competed with
+    #     booking creation for the same lock. The counter now lives in
+    #     analytics.ListingStats.
+
+    # RU: excluded_fields больше не нужен — исключать нечего
+    # EN: excluded_fields is no longer needed — there is nothing to exclude
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name = "Объявление"
@@ -189,28 +227,31 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel):
             ),
         ]
         indexes = [
-            # RU: порядок колонок: равенство, равенство, диапазон.
-            #     Диапазон обрывает использование индекса, поэтому он последний.
-            #     Этот же индекс обслуживает ORDER BY price_per_night.
-            # EN: column order: equality, equality, range.
-            #     A range stops further index usage, so it comes last.
-            #     The same index also serves ORDER BY price_per_night.
             models.Index(
-                fields=("city", "rooms", "price_per_night"),
+                fields=("city_normalized", "rooms", "price_per_night"),
                 name="listing_city_rooms_price_idx",
             ),
-            # RU: rooms и property_type не могут оба стоять вторыми — нужен
-            #     второй индекс под вторую форму запроса.
-            # EN: rooms and property_type cannot both be second — a second index
-            #     is required for the second query shape.
             models.Index(
-                fields=("city", "property_type", "price_per_night"),
+                fields=("city_normalized", "property_type", "price_per_night"),
                 name="listing_city_type_price_idx",
             ),
         ]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.city})"
+
+    def save(self, *args, **kwargs):
+        """
+        RU: Пересчитывает нормализованный город перед сохранением. Источник
+            истины один — поле city; клиент city_normalized не передаёт.
+        EN: Recomputes the normalised city before saving. There is one source of
+            truth — the city field; the client never supplies city_normalized.
+        """
+        self.city_normalized = normalize_search_text(self.city)
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and "city" in set(update_fields):
+            kwargs["update_fields"] = list(set(update_fields) | {"city_normalized"})
+        return super().save(*args, **kwargs)
 
     def has_future_bookings(self) -> bool:
         """
