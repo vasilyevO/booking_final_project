@@ -8,8 +8,11 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from djmoney.models.fields import MoneyField
+from djmoney.money import Money
 from simple_history.models import HistoricalRecords
 from decimal import ROUND_HALF_UP, Decimal
+from django.utils.translation import gettext_lazy as _
 
 from core.models import PublicIdModel, TimeStampedModel, ValidatedModel
 from core.validators import validate_not_own_listing
@@ -136,7 +139,6 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     #     могут измениться, а объявление может быть удалено.
     # EN: snapshots taken at booking time — the listing price and title
     #     may change, and the listing may be removed altogether.
-    price_per_night_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
 
     discount_percent = models.PositiveSmallIntegerField(
         default=0,
@@ -144,12 +146,29 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         verbose_name="Скидка, %",
         help_text="Discount applied at booking time, 0 to 100 percent",
     )
-    total_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        editable=False,
-        verbose_name="Итого",
-        help_text="Agreed contract amount. Frozen at booking time, never recomputed later",
+    price_per_night_snapshot = MoneyField(
+        max_digits=10, decimal_places=2,
+        default_currency=settings.DEFAULT_CURRENCY, editable=False,
+    )
+    total_price = MoneyField(
+        max_digits=12, decimal_places=2,
+        default_currency=settings.DEFAULT_CURRENCY, editable=False,
+        verbose_name=_("Total"),
+        help_text=_("Agreed contract amount, frozen at booking time"),
+    )
+    # RU: курс тоже замораживается. Иначе отчёт «выручка за квартал»
+    #     пересчитается задним числом при следующем движении курса —
+    #     закрытый период менять нельзя.
+    # EN: the rate is frozen too. Otherwise a "revenue per quarter" report
+    #     would change retroactively on the next rate movement — a closed
+    #     period must not move.
+    exchange_rate = models.DecimalField(
+        max_digits=18, decimal_places=8, editable=False, default=Decimal("1"),
+        verbose_name=_("Exchange rate at booking time"),
+    )
+    total_price_base = models.DecimalField(
+        max_digits=14, decimal_places=2, editable=False, default=Decimal("0"),
+        verbose_name=_("Total in base currency"),
     )
     listing_title_snapshot = models.CharField(max_length=200)
 
@@ -247,23 +266,22 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         """
         return (self.end_date - self.start_date).days
 
-    def calculate_total(self) -> Decimal:
+    def calculate_total(self) -> Money:
         """
-        RU: Единственное место, где живёт формула суммы. Вызывается из сервиса
-            при создании; сохранённое значение потом не пересчитывается —
-            это сумма договора, а не текущая цена.
-        EN: The single place where the total formula lives. Called by the
-            service on creation; the stored value is never recomputed —
-            it is the contract amount, not the current price.
+        RU: Единственное место с формулой суммы. Money * int и Money / int
+            возвращают Money; quantize применяем к .amount, иначе в БД уйдёт
+            число с десятком знаков и MySQL округлит его по-своему.
+        EN: The single place holding the total formula. Money * int and
+            Money / int return Money; quantize is applied to .amount, otherwise
+            a many-digit number reaches the database and MySQL rounds it
+            its own way.
         """
         base = self.price_per_night_snapshot * self.nights
-        discounted = base * (Decimal(100) - Decimal(self.discount_percent)) / Decimal(100)
-        # RU: quantize обязателен — без него в БД уйдёт число с десятком знаков,
-        #     MySQL округлит его по-своему, и ответ API разойдётся с базой.
-        # EN: quantize is mandatory — without it a many-digit number reaches the
-        #     database, MySQL rounds it its own way, and the API response
-        #     diverges from the stored value.
-        return discounted.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        discounted = base * (100 - self.discount_percent) / 100
+        return Money(
+            discounted.amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            discounted.currency,
+        )
 
     def can_transition_to(self, new_status: str) -> bool:
         """
@@ -295,39 +313,45 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         RU: Правила, невыразимые CHECK-ограничением.
         EN: Rules a CHECK constraint cannot express.
         """
-        errors: dict[str, str] = {}
+        errors: dict[str, ValidationError] = {}
         today = timezone.localdate()
 
-        # RU: дата в прошлом запрещена ТОЛЬКО при создании, иначе отменить
-        #     или завершить старую бронь стало бы невозможно.
-        # EN: a past date is rejected ONLY on creation, otherwise cancelling or
-        #     completing an old booking would become impossible.
         if self._state.adding and self.start_date and self.start_date < today:
-            errors["start_date"] = "Нельзя бронировать в прошлом."
+            errors["start_date"] = ValidationError(
+                _("A booking cannot start in the past."),
+                code="start_date_in_past",
+            )
 
         if self.listing_id and self.tenant_id:
             try:
                 validate_not_own_listing(self.listing, self.tenant)
             except ValidationError as exc:
-                errors["tenant"] = exc.messages[0]
+                errors["tenant"] = exc
 
         if self.listing_id and self.start_date and self.end_date:
             conflicts = Booking.objects.overlapping(
                 self.listing, self.start_date, self.end_date
             ).exclude(pk=self.pk)
             if conflicts.exists():
-                errors["__all__"] = "Эти даты уже заняты."
+                errors["__all__"] = ValidationError(
+                    _("These dates are already booked."),
+                    code="dates_taken",
+                )
 
         original = getattr(self, "_original_status", None)
         if original is not None and original != self.status:
             if self.status not in STATUS_TRANSITIONS[original]:
-                errors["status"] = f"Переход {original} → {self.status} недопустим."
-            # RU: завершить бронь можно только после выезда — иначе арендатор
-            #     пометит её завершённой и оставит отзыв досрочно.
-            # EN: a booking may only be completed after check-out, otherwise a
-            #     tenant could complete it early and post a review.
+                errors["status"] = ValidationError(
+                    _("Transition %(old)s to %(new)s is not allowed."),
+                    code="invalid_transition",
+                    params={"old": original, "new": self.status},
+                )
             elif self.status == BookingStatus.COMPLETED and self.end_date > today:
-                errors["status"] = "Нельзя завершить бронь до даты выезда."
+                errors["status"] = ValidationError(
+                    _("A booking cannot be completed before the check-out date."),
+                    code="completed_too_early",
+                )
 
         if errors:
             raise ValidationError(errors)
+

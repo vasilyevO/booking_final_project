@@ -5,6 +5,7 @@ from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.permissions import IsBookingParticipant, IsListingOwner
@@ -31,7 +32,15 @@ class BookingViewSet(
     """
 
     lookup_field = "public_id"
-    permission_classes = [IsBookingParticipant]
+    # RU: IsAuthenticated обязателен явно: permission_classes перекрывает
+    #     DEFAULT_PERMISSION_CLASSES целиком, а IsBookingParticipant проверяет
+    #     только объект. Без него анонимный GET доходил до get_queryset,
+    #     где filter(tenant=AnonymousUser) падал с 500 вместо 401.
+    # EN: IsAuthenticated must be listed explicitly: permission_classes replaces
+    #     DEFAULT_PERMISSION_CLASSES entirely, and IsBookingParticipant only
+    #     checks the object. Without it an anonymous GET reached get_queryset,
+    #     where filter(tenant=AnonymousUser) raised a 500 instead of a 401.
+    permission_classes = [IsAuthenticated, IsBookingParticipant]
 
     def get_queryset(self):
         """
@@ -44,6 +53,12 @@ class BookingViewSet(
         """
         queryset = Booking.objects.select_related("listing", "tenant")
         user = self.request.user
+        # RU: drf-spectacular инстанцирует вьюсет без запроса — фильтр по
+        #     AnonymousUser упал бы на генерации схемы.
+        # EN: drf-spectacular instantiates the viewset without a request — a
+        #     filter on AnonymousUser would break schema generation.
+        if getattr(self, "swagger_fake_view", False) or not user.is_authenticated:
+            return queryset.none()
         if user.is_staff:
             return queryset
         return queryset.filter(Q(tenant=user) | Q(listing__owner=user))

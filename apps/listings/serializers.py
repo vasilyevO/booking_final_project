@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-
+from djmoney.contrib.django_rest_framework import MoneyField as MoneySerializerField
 from .models import Listing, ListingPhoto
 
 
@@ -45,13 +45,20 @@ class ListingListSerializer(serializers.ModelSerializer):
     rating = serializers.FloatField(read_only=True, default=None)
     reviews_count = serializers.IntegerField(read_only=True, default=0)
     cover_photo = serializers.SerializerMethodField()
+    price_per_night = MoneySerializerField(max_digits=10, decimal_places=2)
+    # RU: колонка валюты выводится отдельным полем — так её видно в JSON
+    #     и в схеме OpenAPI.
+    # EN: the currency column is exposed as its own field, so it is visible
+    #     both in the JSON and in the OpenAPI schema.
+    price_per_night_currency = serializers.CharField(read_only=True)
 
     class Meta:
         model = Listing
         fields = (
             "public_id", "title", "city", "district", "property_type",
-            "rooms", "price_per_night", "is_active",
-            "rating", "reviews_count", "cover_photo", "owner_email", "created_at",
+            "rooms", "price_per_night", "price_per_night_currency",
+            "is_active", "rating", "reviews_count", "cover_photo",
+            "owner_email", "created_at",
         )
 
     @extend_schema_field(serializers.CharField(allow_null=True))

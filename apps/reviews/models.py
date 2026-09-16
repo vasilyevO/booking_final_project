@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -79,6 +81,19 @@ class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
 
     def __str__(self) -> str:
         return f"{self.rating}★ — {self.listing_id}"
+
+    @property
+    def is_editable(self) -> bool:
+        """
+        RU: Отзыв правится только в течение окна редактирования после
+            публикации. Порог берётся из настроек, чтобы правило не было
+            зашито в код. Свойство читает core.permissions.IsReviewAuthor.
+        EN: A review may be edited only within the edit window after it was
+            posted. The threshold comes from settings so the rule is not
+            hard-coded. Read by core.permissions.IsReviewAuthor.
+        """
+        window = timedelta(days=getattr(settings, "REVIEW_EDIT_WINDOW_DAYS", 14))
+        return timezone.now() - self.created_at <= window
 
     def clean(self) -> None:
         """

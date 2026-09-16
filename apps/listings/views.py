@@ -9,9 +9,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.analytics.services import register_listing_view
+from apps.analytics.models import SearchQuery
 from apps.bookings.models import BookingStatus
 from apps.reviews.models import Review
 from apps.reviews.serializers import ReviewReadSerializer
+from core.text import normalize_search_text
 from core.permissions import IsOwnerOrReadOnly, ReadOnlyOrModelPermission
 from .filters import ListingFilter
 from .models import Listing, ListingPhoto
@@ -30,7 +32,7 @@ from .services import reorder_photos
             OpenApiParameter("city", str, description="City in any spelling: Köln, Koeln, koln"),
             OpenApiParameter("price_min", float, description="Minimum price per night, EUR"),
             OpenApiParameter("price_max", float, description="Maximum price per night, EUR"),
-            OpenApiParameter("ordering", str, description="price_per_night, -price_per_night, created_at, -created_at"),
+            OpenApiParameter("ordering", str, description="price_base, -price_base, created_at, -created_at, stats__views_count"),
         ],
     ),
     retrieve=extend_schema(summary="Listing details"),
@@ -47,7 +49,7 @@ class ListingViewSet(viewsets.ModelViewSet):
     # EN: public_id instead of pk — never expose sequential identifiers
     lookup_field = "public_id"
     filterset_class = ListingFilter
-    ordering_fields = ("price_per_night", "created_at", "stats__views_count")
+    ordering_fields = ("price_base", "created_at", "stats__views_count")
     ordering = ("-created_at", "-id")
     permission_classes = [ReadOnlyOrModelPermission, IsOwnerOrReadOnly]
 
@@ -77,6 +79,38 @@ class ListingViewSet(viewsets.ModelViewSet):
             return queryset
         return queryset.active()
 
+    def filter_queryset(self, queryset):
+        """
+        RU: Свободный поиск идёт через ListingQuerySet.search() — FULLTEXT
+            с сортировкой по релевантности. SearchFilter из DRF здесь не
+            работал: он опирается на search_fields и строит LIKE.
+        EN: Free-text search goes through ListingQuerySet.search() — FULLTEXT
+            ordered by relevance. The DRF SearchFilter did nothing here: it
+            relies on search_fields and builds a LIKE.
+        """
+        queryset = super().filter_queryset(queryset)
+        term = self.request.query_params.get("search", "").strip()
+        if term:
+            queryset = queryset.search(term)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        RU: Поисковый запрос попадает в аналитику — без этой записи
+            эндпоинт popular-keywords всегда отдавал пустой список.
+        EN: The search term is recorded for analytics — without this write the
+            popular-keywords endpoint always returned an empty list.
+        """
+        response = super().list(request, *args, **kwargs)
+        term = request.query_params.get("search", "").strip()
+        if term:
+            SearchQuery.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                keyword=normalize_search_text(term),
+                results_count=response.data.get("count", 0),
+            )
+        return response
+
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
             return ListingWriteSerializer
@@ -94,9 +128,11 @@ class ListingViewSet(viewsets.ModelViewSet):
         RU: Просмотр фиксируется в analytics и не трогает строку объявления.
         EN: The view is recorded in analytics and never touches the listing row.
         """
-        response = super().retrieve(request, *args, **kwargs)
+        listing = self.get_object()
+        serializer = self.get_serializer(listing)
+        response = Response(serializer.data)
         register_listing_view(
-            listing_id=self.get_object().pk,
+            listing_id=listing.pk,
             user=request.user,
             session_key=request.session.session_key or "",
         )

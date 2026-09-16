@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -11,6 +11,12 @@ from simple_history.models import HistoricalRecords
 from django.db.models.expressions import RawSQL
 import uuid
 from pathlib import Path
+from django.utils.translation import gettext_lazy as _
+from djmoney.models.fields import MoneyField
+from djmoney.models.validators import MinMoneyValidator
+from djmoney.contrib.exchange.models import convert_money
+from djmoney.money import Money
+from django.utils.translation import get_language
 
 from core.models import PublicIdModel, SoftDeleteModel, TimeStampedModel, ValidatedModel
 from core.text import normalize_search_text
@@ -22,10 +28,10 @@ class PropertyType(models.TextChoices):
     EN: Type of the advertised property.
     """
 
-    APARTMENT = "apartment", "Квартира"
-    HOUSE = "house", "Дом"
-    STUDIO = "studio", "Студия"
-    ROOM = "room", "Комната"
+    APARTMENT = "apartment", _("Apartment")
+    HOUSE = "house", _("House")
+    STUDIO = "studio", _("Studio")
+    ROOM = "room", _("Room")
 
 def listing_photo_path(instance: "ListingPhoto", filename: str) -> str:
     """
@@ -51,44 +57,84 @@ class ListingQuerySet(models.QuerySet):
         """
         return self.filter(is_active=True)
 
-def by_owner(self, user) -> "ListingQuerySet":
-    """
-    RU: Объявления конкретного владельца.
-    EN: Listings owned by the given user.
-    """
-    return self.filter(owner=user)
+    def by_owner(self, user) -> "ListingQuerySet":
+        """
+        RU: Объявления конкретного владельца.
+        EN: Listings owned by the given user.
+        """
+        return self.filter(owner=user)
 
-# RU: FULLTEXT не индексирует слова короче innodb_ft_min_token_size
-# EN: FULLTEXT does not index words shorter than innodb_ft_min_token_size
-MIN_FULLTEXT_TOKEN = 3
+    # RU: FULLTEXT не индексирует слова короче innodb_ft_min_token_size
+    # EN: FULLTEXT does not index words shorter than innodb_ft_min_token_size
+    MIN_FULLTEXT_TOKEN = 3
 
-def search(self, term: str) -> "ListingQuerySet":
-    """
-    RU: Полнотекстовый поиск по FULLTEXT-индексу с сортировкой по
-        релевантности. Для коротких слов автоматически падает на LIKE,
-        который индекс не использует, но хотя бы что-то находит.
-    EN: Full-text search over the FULLTEXT index, ordered by relevance.
-        Short words automatically fall back to LIKE, which cannot use an
-        index but at least returns something.
-    """
-    term = (term or "").strip()
-    if not term:
-        return self
+    def search(self, term: str) -> "ListingQuerySet":
+        """
+        RU: Ищет по колонкам активного языка. Имя колонки подставляется из
+            белого списка MODELTRANSLATION_LANGUAGES, не из запроса —
+            в SQL параметризовать имя колонки нельзя, и без белого списка
+            это была бы инъекция.
+        EN: Searches the active language's columns. The column name comes from
+            the MODELTRANSLATION_LANGUAGES allowlist, never from the request:
+            a column name cannot be parameterised in SQL, and without the
+            allowlist this would be an injection.
+        """
+        term = (term or "").strip()
+        if not term:
+            return self
 
-    if len(term) < self.MIN_FULLTEXT_TOKEN:
-        return self.filter(Q(title__icontains=term) | Q(description__icontains=term))
+        lang = get_language() or settings.MODELTRANSLATION_DEFAULT_LANGUAGE
+        if lang not in settings.MODELTRANSLATION_LANGUAGES:
+            lang = settings.MODELTRANSLATION_DEFAULT_LANGUAGE
 
-    # RU: параметр передаём отдельно — форматирование строки было бы инъекцией
-    # EN: pass the parameter separately — string formatting would be injection
-    relevance = RawSQL("MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)", (term,))
-    return self.annotate(relevance=relevance).filter(relevance__gt=0)
+        if len(term) < self.MIN_FULLTEXT_TOKEN:
+            return self.filter(
+                Q(**{f"title_{lang}__icontains": term})
+                | Q(**{f"description_{lang}__icontains": term})
+            )
 
-def with_related(self) -> "ListingQuerySet":
-    """
-    RU: Снимает N+1 для карточек списка: владелец, фото и статистика.
-    EN: Removes N+1 for list cards: owner, photos and stats.
-    """
-    return self.select_related("owner", "stats").prefetch_related("photos")
+        # RU: BOOLEAN MODE — это свой мини-язык: + - > < ( ) ~ * " @ в нём
+        #     операторы. Параметризация от этого не спасает, значение всё равно
+        #     разбирает парсер MySQL, и «++a» падало ошибкой 1064, то есть 500.
+        #     Экранирования в этом языке нет — единственный надёжный приём
+        #     это привести запрос к списку фраз в кавычках.
+        # EN: BOOLEAN MODE is a little language of its own: + - > < ( ) ~ * " @
+        #     are operators in it. Parameterisation does not help, since MySQL's
+        #     own parser still reads the value, and "++a" failed with error 1064,
+        #     i.e. a 500. That language has no escape syntax — the only reliable
+        #     approach is to reduce the query to a list of quoted phrases.
+        phrases = self._as_boolean_phrases(term)
+        if not phrases:
+            return self.none()
+
+        relevance = RawSQL(
+            f"MATCH(title_{lang}, description_{lang}) AGAINST (%s IN BOOLEAN MODE)",
+            (phrases,),
+        )
+        return self.annotate(relevance=relevance).filter(relevance__gt=0)
+
+    @staticmethod
+    def _as_boolean_phrases(term: str) -> str:
+        """
+        RU: Превращает пользовательский ввод в безопасный запрос BOOLEAN MODE:
+            слова внутри кавычек парсер читает буквально, поэтому операторы
+            теряют силу. Кавычки из ввода вырезаются — иначе фразу можно
+            закрыть досрочно и вернуть операторы обратно.
+        EN: Turns user input into a safe BOOLEAN MODE query: inside quotes the
+            parser reads words literally, so the operators lose their meaning.
+            Quotes from the input are dropped — otherwise a phrase could be
+            closed early and the operators brought back.
+        """
+        words = [word.strip('"').strip() for word in term.replace('"', " ").split()]
+        return " ".join(f'"{word}"' for word in words if word)
+
+    def with_related(self) -> "ListingQuerySet":
+        """
+        RU: Снимает N+1 для карточек списка: владелец, фото и статистика.
+        EN: Removes N+1 for list cards: owner, photos and stats.
+        """
+        return self.select_related("owner", "stats").prefetch_related("photos")
+
 
 class ListingManager(models.Manager.from_queryset(ListingQuerySet)):
     """
@@ -165,12 +211,46 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
         verbose_name="Индекс",
         help_text="Postal code, e.g. 50667. Optional",
     )
-    price_per_night = models.DecimalField(
+    # RU: MoneyField — это ДВЕ колонки: price_per_night (decimal) и
+    #     price_per_night_currency (varchar(3)). В Python — один Money.
+    # EN: a MoneyField is TWO columns: price_per_night (decimal) and
+    #     price_per_night_currency (varchar(3)). In Python it is one Money.
+    price_per_night = MoneyField(
         max_digits=10,
         decimal_places=2,
-        validators=[MinValueValidator(Decimal("0.01"))],
-        verbose_name="Цена за ночь",
-        help_text="Price per night in EUR, e.g. 89.50",
+        default_currency=settings.DEFAULT_CURRENCY,
+        # RU: MinValueValidator сравнивает Money с Decimal, а py-moneyed на
+        #     таком сравнении бросает MoneyComparisonError — full_clean() падал
+        #     на КАЖДОМ сохранении объявления. MinMoneyValidator сравнивает
+        #     суммы, приводя валюту.
+        # EN: MinValueValidator compares Money against a Decimal, and py-moneyed
+        #     raises MoneyComparisonError on that — full_clean() failed on EVERY
+        #     listing save. MinMoneyValidator compares amounts, handling currency.
+        validators=[MinMoneyValidator(Decimal("0.01"))],
+        verbose_name=_("Price per night"),
+        help_text=_("Price per one night in the chosen currency, e.g. 89.50"),
+    )
+    # RU: денормализованная цена в базовой валюте. Нужна потому, что фильтр
+    #     price__lte=100 сравнивает числа и игнорирует колонку валюты:
+    #     100 USD, 100 PLN и 100 EUR встали бы рядом. Тот же приём, что
+    #     city_normalized: авторитетное значение отдельно, поисковое отдельно.
+    # EN: denormalised price in the base currency. Needed because a
+    #     price__lte=100 filter compares numbers and ignores the currency
+    #     column: 100 USD, 100 PLN and 100 EUR would rank together. The same
+    #     pattern as city_normalized: the authoritative value and the
+    #     searchable one are separate columns.
+    price_base = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        editable=False,
+        # RU: заполнитель для уже существующих строк при миграции. Реальное
+        #     значение всегда пересчитывает Listing.save() до full_clean().
+        # EN: a filler for rows that already exist when the migration runs. The
+        #     real value is always recomputed by Listing.save() before full_clean().
+        default=Decimal("0"),
+        db_index=False,
+        verbose_name=_("Price in base currency"),
+        help_text=_("Computed automatically, used for filtering and sorting"),
     )
     rooms = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(50)],
@@ -214,25 +294,42 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
         base_manager_name = "all_objects"
         constraints = [
             models.CheckConstraint(
-                condition=Q(price_per_night__gt=0), name="listing_price_gt_zero"
+                condition=Q(price_per_night__gt=0),
+                name="listing_price_gt_zero",
+                violation_error_message=_("Price must be greater than zero."),
             ),
-            models.CheckConstraint(condition=Q(rooms__gte=1), name="listing_rooms_gte_one"),
-            # RU: Django НЕ переносит choices в БД — колонка остаётся обычным
-            #     varchar. Только явный CHECK защищает от bulk_create.
-            # EN: Django does NOT push choices to the database — the column is a
-            #     plain varchar. Only an explicit CHECK guards against bulk_create.
+            # RU: колонка валюты — обычный varchar. Django не переносит в БД
+            #     ни choices, ни список CURRENCIES, поэтому CHECK обязателен.
+            # EN: the currency column is a plain varchar. Django pushes neither
+            #     choices nor the CURRENCIES list to the database, so the CHECK
+            #     is mandatory.
+            models.CheckConstraint(
+                condition=Q(price_per_night_currency__in=settings.CURRENCIES),
+                name="listing_currency_valid",
+                violation_error_message=_("Unsupported currency."),
+            ),
+            models.CheckConstraint(
+                condition=Q(rooms__gte=1),
+                name="listing_rooms_gte_one",
+                violation_error_message=_("A listing must have at least one room."),
+            ),
             models.CheckConstraint(
                 condition=Q(property_type__in=PropertyType.values),
                 name="listing_property_type_valid",
+                violation_error_message=_("Unknown property type."),
             ),
         ]
         indexes = [
+            # RU: индексы переехали с price_per_night на price_base —
+            #     сортировка по смешанным валютам была бы неверной.
+            # EN: the indexes moved from price_per_night to price_base —
+            #     sorting across mixed currencies would be wrong.
             models.Index(
-                fields=("city_normalized", "rooms", "price_per_night"),
+                fields=("city_normalized", "rooms", "price_base"),
                 name="listing_city_rooms_price_idx",
             ),
             models.Index(
-                fields=("city_normalized", "property_type", "price_per_night"),
+                fields=("city_normalized", "property_type", "price_base"),
                 name="listing_city_type_price_idx",
             ),
         ]
@@ -242,16 +339,56 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
 
     def save(self, *args, **kwargs):
         """
-        RU: Пересчитывает нормализованный город перед сохранением. Источник
-            истины один — поле city; клиент city_normalized не передаёт.
-        EN: Recomputes the normalised city before saving. There is one source of
-            truth — the city field; the client never supplies city_normalized.
+        RU: Пересчитывает производные поля до full_clean(): нормализованный
+            город и цену в базовой валюте. Оба объявлены без blank=True,
+            поэтому порядок важен — иначе валидация упадёт на пустом поле.
+        EN: Recomputes the derived fields before full_clean(): the normalised
+            city and the base-currency price. Neither allows blank, so the
+            order matters — otherwise validation fails on an empty field.
         """
         self.city_normalized = normalize_search_text(self.city)
+        self.price_base = self._to_base_currency(self.price_per_night)
+
         update_fields = kwargs.get("update_fields")
-        if update_fields is not None and "city" in set(update_fields):
-            kwargs["update_fields"] = list(set(update_fields) | {"city_normalized"})
+        if update_fields is not None:
+            names = set(update_fields)
+            # RU: при частичном сохранении производные поля надо добавить
+            #     в список явно, иначе UPDATE их не запишет.
+            # EN: on a partial save the derived fields must be added to the
+            #     list explicitly, otherwise the UPDATE skips them.
+            if "city" in names:
+                names.add("city_normalized")
+            if "price_per_night" in names or "price_per_night_currency" in names:
+                names.add("price_base")
+            kwargs["update_fields"] = list(names)
+
         return super().save(*args, **kwargs)
+
+    @staticmethod
+    def _to_base_currency(amount: Money) -> Decimal:
+        """
+        RU: Приводит сумму к базовой валюте. Если курсы ещё не загружены
+            командой update_rates, падать нельзя — отдаём исходное число.
+        EN: Converts an amount into the base currency. If the rates have not
+            been loaded by update_rates yet, do not fail — return the raw value.
+        """
+        if amount is None:
+            return Decimal("0")
+        if str(amount.currency) == settings.BASE_CURRENCY:
+            return amount.amount
+        try:
+            converted = convert_money(amount, settings.BASE_CURRENCY).amount
+        except Exception:
+            return amount.amount
+        # RU: convert_money делит на курс и возвращает Decimal полной точности —
+        #     250 CZK дают 9.96015936254980079681274900 EUR, а это 28 знаков
+        #     при max_digits=12. Без округления full_clean() отклоняет
+        #     любую цену в неевровой валюте.
+        # EN: convert_money divides by the rate and returns a full-precision
+        #     Decimal — 250 CZK become 9.96015936254980079681274900 EUR, i.e. 28
+        #     digits against max_digits=12. Without rounding, full_clean()
+        #     rejects every non-EUR price.
+        return converted.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     def has_future_bookings(self) -> bool:
         """

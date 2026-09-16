@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 
 def validate_not_own_listing(listing, tenant) -> None:
@@ -13,4 +14,7 @@ def validate_not_own_listing(listing, tenant) -> None:
     if listing is None or tenant is None:
         return
     if listing.owner_id == tenant.pk:
-        raise ValidationError("Владелец не может забронировать собственное жильё.")
+        raise ValidationError(
+            _("You cannot book your own property."),
+            code="own_listing",
+        )

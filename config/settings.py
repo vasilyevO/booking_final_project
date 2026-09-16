@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
-
+from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -52,12 +52,17 @@ ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "djmoney",
+    # RU: contrib.exchange хранит курсы и даёт convert_money()
+    # EN: contrib.exchange stores the rates and provides convert_money()
+    "djmoney.contrib.exchange",
 
 # third-party
     "rest_framework",
@@ -68,6 +73,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     "drf_spectacular",
+    "drf_standardized_errors",
     "simple_history",
 # local
     "apps.users",
@@ -77,18 +83,48 @@ INSTALLED_APPS = [
     "apps.analytics",
 ]
 
+MODELTRANSLATION_DEFAULT_LANGUAGE = "en"
+MODELTRANSLATION_LANGUAGES = ("en", "de", "ru")
+# RU: если перевода нет — показываем язык по умолчанию, а не пустоту
+# EN: when a translation is missing, fall back to the default language
+MODELTRANSLATION_FALLBACK_LANGUAGES = ("en",)
+
+# RU: базовая валюта проекта. Всё, что нужно сравнивать и сортировать,
+#     приводится к ней в денормализованной колонке.
+# EN: the project's base currency. Anything that must be compared or sorted
+#     is converted into it in a denormalised column.
+BASE_CURRENCY = "EUR"
+DEFAULT_CURRENCY = "EUR"
+
+# RU: ограничивает выпадающий список и значения колонки *_currency
+# EN: limits the dropdown and the values of the *_currency column
+CURRENCIES = ("EUR", "USD", "GBP", "PLN", "CZK")
+CURRENCY_CHOICES = [
+    ("EUR", "EUR €"), ("USD", "USD $"), ("GBP", "GBP £"),
+    ("PLN", "PLN zł"), ("CZK", "CZK Kč"),
+]
+
+# RU: свой бэкенд с фиксированными курсами — внешний API требует ключа,
+#     а на защите может не быть интернета. Замена на боевой бэкенд —
+#     одна строка, это Open/Closed на практике.
+# EN: a local fixed-rate backend — an external API needs a key and there may
+#     be no internet during the defence. Swapping in a production backend is
+#     a one-line change: Open/Closed in practice.
+EXCHANGE_BACKEND = "apps.listings.exchange.StaticExchangeBackend"
+
 AUTH_USER_MODEL = "users.User"      # до первой миграции!
 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -111,10 +147,9 @@ TEMPLATES = [
 #------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # RU: без этой строки simplejwt установлен, но не используется —
-    #     аутентификация осталась бы сессионной.
-    # EN: without this line simplejwt is installed but unused —
-    #     authentication would fall back to sessions.
+    # RU: наш обработчик, а не библиотечный напрямую — см. core/exceptions.py
+    # EN: our handler rather than the library one — see core/exceptions.py
+
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
@@ -129,12 +164,45 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
+DRF_STANDARDIZED_ERRORS = {
+    # RU: в разработке показываем и необработанные исключения в том же
+    #     формате — иначе 500 приходит голым HTML и его неудобно читать.
+    # EN: in development unhandled exceptions use the same format too —
+    #     otherwise a 500 arrives as raw HTML and is awkward to read.
+    "ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": DEBUG,
+}
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Booking API",
     "DESCRIPTION": "Housing rental booking service",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # RU: постпроцессор вписывает схемы ошибок в OpenAPI — без него Swagger
+    #     показывает только успешные ответы.
+    # EN: the postprocessing hook writes error schemas into the OpenAPI
+    #     document — without it Swagger shows successful responses only.
+    "POSTPROCESSING_HOOKS": [
+        "drf_standardized_errors.openapi_hooks.postprocess_schema_enums"
+    ],
+    # RU: без переопределений spectacular ругается на коллизии имён enum:
+    #     одинаковые наборы кодов встречаются в схеме много раз.
+    # EN: without the overrides spectacular warns about enum name collisions:
+    #     the same sets of codes appear in the schema many times.
+    "ENUM_NAME_OVERRIDES": {
+        "ValidationErrorEnum": "drf_standardized_errors.openapi_serializers.ValidationErrorEnum.choices",
+        "ClientErrorEnum": "drf_standardized_errors.openapi_serializers.ClientErrorEnum.choices",
+        "ServerErrorEnum": "drf_standardized_errors.openapi_serializers.ServerErrorEnum.choices",
+        "ErrorCode401Enum": "drf_standardized_errors.openapi_serializers.ErrorCode401Enum.choices",
+        "ErrorCode403Enum": "drf_standardized_errors.openapi_serializers.ErrorCode403Enum.choices",
+        "ErrorCode404Enum": "drf_standardized_errors.openapi_serializers.ErrorCode404Enum.choices",
+        "ErrorCode405Enum": "drf_standardized_errors.openapi_serializers.ErrorCode405Enum.choices",
+        "ErrorCode406Enum": "drf_standardized_errors.openapi_serializers.ErrorCode406Enum.choices",
+        "ErrorCode415Enum": "drf_standardized_errors.openapi_serializers.ErrorCode415Enum.choices",
+        "ErrorCode429Enum": "drf_standardized_errors.openapi_serializers.ErrorCode429Enum.choices",
+        "ErrorCode500Enum": "drf_standardized_errors.openapi_serializers.ErrorCode500Enum.choices",
+    },
 }
+
    #----------------------------------------------------
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -182,10 +250,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Europe/Berlin"
+LANGUAGE_CODE = "en"
+LANGUAGES = [
+    ("en", _("English")),
+    ("de", _("German")),
+    ("ru", _("Russian")),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 USE_I18N = True
 USE_TZ = True
+TIME_ZONE = "Europe/Berlin"
 
 
 # Static files (CSS, JavaScript, Images)
@@ -205,6 +279,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # EN: how many days before check-in a booking may still be cancelled —
 #     read by Booking.is_cancellable() so the rule is not hard-coded.
 BOOKING_CANCELLATION_DAYS = int(os.getenv("BOOKING_CANCELLATION_DAYS", "1"))
+
+# RU: сколько дней после публикации автор ещё может править отзыв —
+#     читает Review.is_editable(), правило не зашито в код.
+# EN: how many days after posting the author may still edit a review —
+#     read by Review.is_editable() so the rule is not hard-coded.
+REVIEW_EDIT_WINDOW_DAYS = int(os.getenv("REVIEW_EDIT_WINDOW_DAYS", "14"))
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

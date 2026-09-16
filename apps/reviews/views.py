@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from rest_framework import mixins, viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from core.permissions import IsReviewAuthor
 from .models import Review
@@ -22,7 +23,11 @@ class ReviewViewSet(
     """
 
     queryset = Review.objects.select_related("author", "listing", "booking")
-    permission_classes = [IsReviewAuthor]
+    # RU: IsReviewAuthor проверяет только объект и на create не вызывается —
+    #     без IsAuthenticatedOrReadOnly отзыв мог отправить аноним.
+    # EN: IsReviewAuthor is object-level only and never runs on create —
+    #     without IsAuthenticatedOrReadOnly an anonymous user could post.
+    permission_classes = [IsAuthenticatedOrReadOnly, IsReviewAuthor]
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
