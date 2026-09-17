@@ -12,11 +12,12 @@ from core.permissions import IsBookingParticipant, IsListingOwner
 from .models import Booking, BookingStatus
 from .serializers import BookingCreateSerializer, BookingReadSerializer
 from .services import change_status
+from django.utils.translation import gettext_lazy as _
 
 
 @extend_schema_view(
-    list=extend_schema(summary="My bookings, as a tenant or as a landlord"),
-    create=extend_schema(summary="Create a booking"),
+    list=extend_schema(summary=_("My bookings, as a tenant or as a landlord")),
+    create=extend_schema(summary=_("Create a booking")),
 )
 class BookingViewSet(
     mixins.CreateModelMixin,
@@ -91,17 +92,17 @@ class BookingViewSet(
             return Response({"detail": exc.messages}, status=status.HTTP_400_BAD_REQUEST)
         return Response(BookingReadSerializer(booking).data)
 
-    @extend_schema(summary="Confirm a booking (landlord only)", request=None)
+    @extend_schema(summary=_("Confirm a booking (landlord only)"), request=None)
     @action(detail=True, methods=["post"])
     def confirm(self, request, public_id=None):
         return self._transition(request, BookingStatus.CONFIRMED, IsListingOwner)
 
-    @extend_schema(summary="Reject a booking (landlord only)", request=None)
+    @extend_schema(summary=_("Reject a booking (landlord only)"), request=None)
     @action(detail=True, methods=["post"])
     def reject(self, request, public_id=None):
         return self._transition(request, BookingStatus.REJECTED, IsListingOwner)
 
-    @extend_schema(summary="Cancel a booking (tenant or landlord)", request=None)
+    @extend_schema(summary=_("Cancel a booking (tenant or landlord)"), request=None)
     @action(detail=True, methods=["post"])
     def cancel(self, request, public_id=None):
         """
@@ -111,7 +112,7 @@ class BookingViewSet(
         booking = self.get_object()
         if not booking.is_cancellable():
             return Response(
-                {"detail": "Срок бесплатной отмены истёк."},
+                {"detail": _("The free cancellation deadline has passed.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return self._transition(request, BookingStatus.CANCELLED, IsBookingParticipant)

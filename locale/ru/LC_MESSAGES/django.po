@@ -1,0 +1,626 @@
+# Russian translation for booking_final_project
+# Copyright (C) 2026
+# This file is distributed under the same license as the project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: booking_final_project 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-16 13:12+0200\n"
+"PO-Revision-Date: 2026-09-16 12:00+0200\n"
+"Last-Translator: Oleg Vasilyev\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
+"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+
+# ============================================================
+# analytics
+# ============================================================
+#: .\apps\analytics\models.py:30
+msgid "Search query"
+msgstr "Поисковый запрос"
+
+#: .\apps\analytics\models.py:31
+msgid "Search history"
+msgstr "История поиска"
+
+#: .\apps\analytics\models.py:62
+msgid "Views"
+msgstr "Просмотров"
+
+#: .\apps\analytics\models.py:63
+msgid "De-duplicated views, one per user per day"
+msgstr "Просмотры без дублей: один на пользователя в сутки"
+
+#: .\apps\analytics\models.py:69 .\apps\analytics\models.py:70
+msgid "Listing statistics"
+msgstr "Статистика объявлений"
+
+#: .\apps\analytics\models.py:105
+msgid "Listing view"
+msgstr "Просмотр объявления"
+
+#: .\apps\analytics\models.py:106
+msgid "View history"
+msgstr "История просмотров"
+
+#: .\apps\analytics\serializers.py:15
+msgid "Normalised search keyword"
+msgstr "Нормализованное ключевое слово"
+
+#: .\apps\analytics\serializers.py:16
+msgid "How many times it was searched"
+msgstr "Сколько раз искали"
+
+#: .\apps\analytics\serializers.py:27
+msgid "Total de-duplicated views"
+msgstr "Всего просмотров без дублей"
+
+#: .\apps\analytics\views.py:26
+msgid "Most searched keywords"
+msgstr "Самые популярные поисковые запросы"
+
+#: .\apps\analytics\views.py:42
+msgid "Most viewed listings"
+msgstr "Самые просматриваемые объявления"
+
+# --- статусы бронирования ---
+#: .\apps\bookings\models.py:27
+msgid "Pending"
+msgstr "Ожидает подтверждения"
+
+#: .\apps\bookings\models.py:28
+msgid "Confirmed"
+msgstr "Подтверждено"
+
+#: .\apps\bookings\models.py:29
+msgid "Rejected"
+msgstr "Отклонено"
+
+#: .\apps\bookings\models.py:30
+msgid "Cancelled"
+msgstr "Отменено"
+
+#: .\apps\bookings\models.py:31
+msgid "Completed"
+msgstr "Завершено"
+
+#: .\apps\bookings\models.py:109
+msgid "Check-in"
+msgstr "Заезд"
+
+#: .\apps\bookings\models.py:110 .\apps\bookings\serializers.py:55
+msgid "Check-in date, inclusive. Format YYYY-MM-DD"
+msgstr "Дата заезда, включительно. Формат ГГГГ-ММ-ДД"
+
+#: .\apps\bookings\models.py:113
+msgid "Check-out"
+msgstr "Выезд"
+
+#: .\apps\bookings\models.py:114 .\apps\bookings\serializers.py:58
+msgid "Check-out date, exclusive: this night is not charged"
+msgstr "Дата выезда, не включается: эта ночь не оплачивается"
+
+#: .\apps\bookings\models.py:124
+msgid "The number of guests must be a whole number."
+msgstr "Количество гостей должно быть целым числом."
+
+#: .\apps\bookings\models.py:125
+msgid "Please specify the number of guests."
+msgstr "Укажите количество гостей."
+
+#: .\apps\bookings\models.py:127
+msgid "Guests"
+msgstr "Гостей"
+
+#: .\apps\bookings\models.py:128
+msgid "Number of guests, from 1 to 20"
+msgstr "Количество гостей, от 1 до 20"
+
+#: .\apps\bookings\models.py:134
+msgid "Status"
+msgstr "Статус"
+
+#: .\apps\bookings\models.py:135
+msgid "Lifecycle status. Changed only through the booking actions"
+msgstr "Статус жизненного цикла. Меняется только через действия бронирования"
+
+#: .\apps\bookings\models.py:146
+msgid "Discount, %"
+msgstr "Скидка, %"
+
+#: .\apps\bookings\models.py:147
+msgid "Discount applied at booking time, 0 to 100 percent"
+msgstr "Скидка на момент бронирования, от 0 до 100 процентов"
+
+#: .\apps\bookings\models.py:156
+msgid "Total"
+msgstr "Итого"
+
+#: .\apps\bookings\models.py:157
+msgid "Agreed contract amount, frozen at booking time"
+msgstr "Сумма договора, зафиксированная в момент бронирования"
+
+#: .\apps\bookings\models.py:167
+msgid "Exchange rate at booking time"
+msgstr "Курс на момент бронирования"
+
+#: .\apps\bookings\models.py:171
+msgid "Total in base currency"
+msgstr "Итого в базовой валюте"
+
+# ============================================================
+# bookings
+# ============================================================
+#: .\apps\bookings\models.py:187
+msgid "Booking"
+msgstr "Бронирование"
+
+#: .\apps\bookings\models.py:188
+msgid "Bookings"
+msgstr "Бронирования"
+
+#: .\apps\bookings\models.py:204
+msgid "The check-out date must be later than the check-in date."
+msgstr "Дата выезда должна быть позже даты заезда."
+
+#: .\apps\bookings\models.py:209
+msgid "There must be at least one guest."
+msgstr "Количество гостей должно быть не меньше одного."
+
+#: .\apps\bookings\models.py:214
+msgid "The total amount cannot be negative."
+msgstr "Итоговая сумма не может быть отрицательной."
+
+#: .\apps\bookings\models.py:219
+msgid "The price per night must be positive."
+msgstr "Цена за ночь должна быть положительной."
+
+#: .\apps\bookings\models.py:224
+msgid "Invalid booking status."
+msgstr "Недопустимый статус бронирования."
+
+#: .\apps\bookings\models.py:229
+msgid "The discount cannot exceed 100 percent."
+msgstr "Скидка не может превышать 100 процентов."
+
+# --- сообщения об ошибках ---
+#: .\apps\bookings\models.py:321
+msgid "A booking cannot start in the past."
+msgstr "Нельзя бронировать в прошлом."
+
+#: .\apps\bookings\models.py:337
+msgid "These dates are already booked."
+msgstr "Эти даты уже заняты."
+
+#: .\apps\bookings\models.py:345
+#, python-format
+msgid "Transition %(old)s to %(new)s is not allowed."
+msgstr "Переход %(old)s в %(new)s недопустим."
+
+#: .\apps\bookings\models.py:351
+msgid "A booking cannot be completed before the check-out date."
+msgstr "Нельзя завершить бронирование до даты выезда."
+
+# ============================================================
+# serializers: поля без модели
+# ============================================================
+#: .\apps\bookings\serializers.py:52
+msgid "public_id of the listing to book"
+msgstr "public_id бронируемого объявления"
+
+#: .\apps\bookings\serializers.py:61
+msgid "Number of guests, at least 1"
+msgstr "Количество гостей, не меньше 1"
+
+#: .\apps\bookings\serializers.py:90
+msgid "Target status. Allowed transitions are defined by the state machine"
+msgstr "Целевой статус. Допустимые переходы задаются конечным автоматом"
+
+#: .\apps\bookings\views.py:19
+msgid "My bookings, as a tenant or as a landlord"
+msgstr "Мои бронирования — как арендатора или как арендодателя"
+
+#: .\apps\bookings\views.py:20
+msgid "Create a booking"
+msgstr "Создать бронирование"
+
+#: .\apps\bookings\views.py:95
+msgid "Confirm a booking (landlord only)"
+msgstr "Подтвердить бронирование (только арендодатель)"
+
+#: .\apps\bookings\views.py:100
+msgid "Reject a booking (landlord only)"
+msgstr "Отклонить бронирование (только арендодатель)"
+
+#: .\apps\bookings\views.py:105
+msgid "Cancel a booking (tenant or landlord)"
+msgstr "Отменить бронирование (арендатор или арендодатель)"
+
+#: .\apps\bookings\views.py:115
+msgid "The free cancellation deadline has passed."
+msgstr "Срок бесплатной отмены истёк."
+
+# --- фильтры ---
+#: .\apps\listings\filters.py:16
+msgid "City, any spelling"
+msgstr "Город, в любом написании"
+
+#: .\apps\listings\filters.py:18
+msgid "Minimum price, EUR"
+msgstr "Минимальная цена, EUR"
+
+#: .\apps\listings\filters.py:21
+msgid "Maximum price, EUR"
+msgstr "Максимальная цена, EUR"
+
+#: .\apps\listings\filters.py:26 .\apps\listings\models.py:263
+msgid "Property type"
+msgstr "Тип жилья"
+
+# --- типы жилья ---
+#: .\apps\listings\models.py:31
+msgid "Apartment"
+msgstr "Квартира"
+
+#: .\apps\listings\models.py:32
+msgid "House"
+msgstr "Дом"
+
+#: .\apps\listings\models.py:33
+msgid "Studio"
+msgstr "Студия"
+
+#: .\apps\listings\models.py:34
+msgid "Room"
+msgstr "Комната"
+
+#: .\apps\listings\models.py:169
+msgid "Owner"
+msgstr "Владелец"
+
+#: .\apps\listings\models.py:173
+msgid "Title"
+msgstr "Заголовок"
+
+#: .\apps\listings\models.py:174
+msgid ""
+"Short headline shown in search results, e.g. 'Bright 2-room flat near Rhine'"
+msgstr ""
+"Краткий заголовок для результатов поиска, например «Светлая двушка у Рейна»"
+
+#: .\apps\listings\models.py:177
+msgid "Description"
+msgstr "Описание"
+
+#: .\apps\listings\models.py:178
+msgid "Full description: layout, furniture, neighbourhood, house rules"
+msgstr "Полное описание: планировка, мебель, район, правила проживания"
+
+#: .\apps\listings\models.py:186
+msgid "City"
+msgstr "Город"
+
+#: .\apps\listings\models.py:187
+msgid "City as displayed, e.g. Köln"
+msgstr "Город в том виде, как он показывается, например Köln"
+
+#: .\apps\listings\models.py:193
+msgid "City (search)"
+msgstr "Город (для поиска)"
+
+#: .\apps\listings\models.py:194
+msgid ""
+"Folded lowercase form used for search: Köln, Koeln and koln all become koeln"
+msgstr "Свёрнутая форма для поиска: Köln, Koeln и koln дают koeln"
+
+#: .\apps\listings\models.py:199
+msgid "District"
+msgstr "Район"
+
+#: .\apps\listings\models.py:200
+msgid "District or quarter, optional"
+msgstr "Район или квартал, необязательно"
+
+#: .\apps\listings\models.py:205
+msgid "Address"
+msgstr "Адрес"
+
+#: .\apps\listings\models.py:206
+msgid "Street and house number, e.g. Hohe Straße 12. Optional"
+msgstr "Улица и номер дома, например Hohe Straße 12. Необязательно"
+
+#: .\apps\listings\models.py:211
+msgid "Postal code"
+msgstr "Почтовый индекс"
+
+#: .\apps\listings\models.py:212
+msgid "Postal code, e.g. 50667. Optional"
+msgstr "Почтовый индекс, например 50667. Необязательно"
+
+#: .\apps\listings\models.py:230
+msgid "Price per night"
+msgstr "Цена за ночь"
+
+#: .\apps\listings\models.py:231
+msgid "Price per one night in the chosen currency, e.g. 89.50"
+msgstr "Цена за одну ночь в выбранной валюте, например 89.50"
+
+#: .\apps\listings\models.py:252
+msgid "Price in base currency"
+msgstr "Цена в базовой валюте"
+
+#: .\apps\listings\models.py:253
+msgid "Computed automatically, used for filtering and sorting"
+msgstr "Вычисляется автоматически, используется для фильтрации и сортировки"
+
+#: .\apps\listings\models.py:257
+msgid "Rooms"
+msgstr "Комнат"
+
+#: .\apps\listings\models.py:258
+msgid "Number of rooms, from 1 to 50"
+msgstr "Количество комнат, от 1 до 50"
+
+#: .\apps\listings\models.py:264
+msgid "apartment, house, studio or room"
+msgstr "квартира, дом, студия или комната"
+
+#: .\apps\listings\models.py:268
+msgid "Active"
+msgstr "Активно"
+
+#: .\apps\listings\models.py:269
+msgid "Inactive listings are hidden from search but keep their bookings"
+msgstr "Неактивные объявления скрыты из поиска, но их бронирования сохраняются"
+
+# ============================================================
+# listings
+# ============================================================
+#: .\apps\listings\models.py:289
+msgid "Listing"
+msgstr "Объявление"
+
+#: .\apps\listings\models.py:290
+msgid "Listings"
+msgstr "Объявления"
+
+# --- ограничения ---
+#: .\apps\listings\models.py:299
+msgid "Price must be greater than zero."
+msgstr "Цена должна быть больше нуля."
+
+#: .\apps\listings\models.py:309
+msgid "Unsupported currency."
+msgstr "Валюта не поддерживается."
+
+#: .\apps\listings\models.py:314
+msgid "A listing must have at least one room."
+msgstr "В объявлении должна быть хотя бы одна комната."
+
+#: .\apps\listings\models.py:319
+msgid "Unknown property type."
+msgstr "Неизвестный тип жилья."
+
+#: .\apps\listings\models.py:418
+msgid "Photo"
+msgstr "Фото"
+
+#: .\apps\listings\models.py:419
+msgid "JPEG or PNG, at least 800x600 px"
+msgstr "JPEG или PNG, не меньше 800x600 пикселей"
+
+#: .\apps\listings\models.py:424
+msgid "Caption"
+msgstr "Подпись"
+
+#: .\apps\listings\models.py:425
+msgid "Optional caption, e.g. 'Living room'"
+msgstr "Необязательная подпись, например «Гостиная»"
+
+#: .\apps\listings\models.py:429
+msgid "Position"
+msgstr "Позиция"
+
+#: .\apps\listings\models.py:430
+msgid "Display order, ascending. The lowest value is the cover photo"
+msgstr "Порядок показа по возрастанию. Наименьшее значение — обложка"
+
+#: .\apps\listings\models.py:434
+msgid "Listing photo"
+msgstr "Фото объявления"
+
+#: .\apps\listings\models.py:435
+msgid "Listing photos"
+msgstr "Фото объявлений"
+
+#: .\apps\listings\serializers.py:31
+msgid "All photo ids of this listing, in the desired display order"
+msgstr "Все id фотографий объявления в нужном порядке показа"
+
+#: .\apps\listings\services.py:22
+msgid "Photo list does not match the listing"
+msgstr "Список фотографий не соответствует объявлению"
+
+# ============================================================
+# views: summary и description для Swagger
+# ============================================================
+#: .\apps\listings\views.py:31
+msgid "Search and filter listings"
+msgstr "Поиск и фильтрация объявлений"
+
+#: .\apps\listings\views.py:33
+msgid "Free-text search in title and description"
+msgstr "Полнотекстовый поиск по заголовку и описанию"
+
+#: .\apps\listings\views.py:34
+msgid "City in any spelling: Köln, Koeln, koln"
+msgstr "Город в любом написании: Köln, Koeln, koln"
+
+#: .\apps\listings\views.py:35
+msgid "Minimum price per night, EUR"
+msgstr "Минимальная цена за ночь, EUR"
+
+#: .\apps\listings\views.py:36
+msgid "Maximum price per night, EUR"
+msgstr "Максимальная цена за ночь, EUR"
+
+#: .\apps\listings\views.py:44
+#, python-format
+msgid "Sort order. Available fields: %(fields)s"
+msgstr "Порядок сортировки. Доступные поля: %(fields)s"
+
+#: .\apps\listings\views.py:52
+msgid "Listing details"
+msgstr "Карточка объявления"
+
+#: .\apps\listings\views.py:164
+msgid "Upload a photo"
+msgstr "Загрузить фото"
+
+#: .\apps\listings\views.py:179
+msgid "Reorder photos"
+msgstr "Изменить порядок фото"
+
+#: .\apps\listings\views.py:193
+msgid "Reviews of this listing"
+msgstr "Отзывы об объявлении"
+
+#: .\apps\reviews\models.py:56
+msgid "Rating"
+msgstr "Оценка"
+
+#: .\apps\reviews\models.py:57
+msgid "Rating from 1 to 5"
+msgstr "Оценка от 1 до 5"
+
+#: .\apps\reviews\models.py:62
+msgid "Text"
+msgstr "Текст"
+
+#: .\apps\reviews\models.py:63
+msgid "Free-form review, up to 2000 characters"
+msgstr "Свободный текст отзыва, до 2000 символов"
+
+# ============================================================
+# reviews
+# ============================================================
+#: .\apps\reviews\models.py:69
+msgid "Review"
+msgstr "Отзыв"
+
+#: .\apps\reviews\models.py:70
+msgid "Reviews"
+msgstr "Отзывы"
+
+#: .\apps\reviews\models.py:108
+msgid "A review can only be left after the stay is completed."
+msgstr "Отзыв можно оставить только после завершения аренды."
+
+#: .\apps\reviews\models.py:110
+msgid "The stay has not ended yet."
+msgstr "Проживание ещё не закончилось."
+
+#: .\apps\reviews\serializers.py:34
+msgid "public_id of the completed booking being reviewed"
+msgstr "public_id завершённого бронирования, о котором оставляется отзыв"
+
+#: .\apps\reviews\serializers.py:50
+msgid "You can only review your own stay"
+msgstr "Отзыв можно оставить только о собственном проживании"
+
+#: .\apps\reviews\serializers.py:52
+msgid "This booking already has a review"
+msgstr "У этого бронирования уже есть отзыв"
+
+#: .\apps\users\models.py:64
+msgid "email"
+msgstr "email"
+
+#: .\apps\users\models.py:67
+msgid "Phone"
+msgstr "Телефон"
+
+# ============================================================
+# users
+# ============================================================
+#: .\apps\users\models.py:75
+msgid "User"
+msgstr "Пользователь"
+
+#: .\apps\users\models.py:76
+msgid "Users"
+msgstr "Пользователи"
+
+#: .\apps\users\serializers.py:21
+msgid "Role groups the user belongs to"
+msgstr "Ролевые группы, в которые входит пользователь"
+
+#: .\apps\users\serializers.py:42
+msgid "At least 8 characters, not entirely numeric"
+msgstr "Не менее 8 символов, не только цифры"
+
+#: .\apps\users\serializers.py:46
+msgid "Repeat the password exactly"
+msgstr "Повторите пароль в точности"
+
+#: .\apps\users\serializers.py:51
+msgid "tenants may book and review, landlords may publish listings"
+msgstr ""
+"tenants могут бронировать и оставлять отзывы, landlords — публиковать "
+"объявления"
+
+#: .\apps\users\serializers.py:79
+msgid "Passwords do not match"
+msgstr "Пароли не совпадают"
+
+#: .\apps\users\views.py:27
+msgid "Register a new account"
+msgstr "Регистрация нового аккаунта"
+
+#: .\apps\users\views.py:39
+msgid "Current user profile"
+msgstr "Профиль текущего пользователя"
+
+# ============================================================
+# settings
+# ============================================================
+#: .\config\settings.py:255
+msgid "English"
+msgstr "Английский"
+
+#: .\config\settings.py:256
+msgid "German"
+msgstr "Немецкий"
+
+#: .\config\settings.py:257
+msgid "Russian"
+msgstr "Русский"
+
+#: .\core\permissions.py:38
+msgid "You may only modify your own objects."
+msgstr "Изменять можно только собственные объекты."
+
+#: .\core\permissions.py:56
+msgid "A booking is only available to its participants."
+msgstr "Бронирование доступно только его участникам."
+
+#: .\core\permissions.py:71
+msgid "Only the property owner may confirm or reject a booking."
+msgstr "Подтвердить или отклонить бронирование может только владелец жилья."
+
+#: .\core\permissions.py:87
+msgid "A review may only be edited by its author, within 14 days."
+msgstr "Отзыв может править только автор и только в течение 14 дней."
+
+# ============================================================
+# core: permissions и validators
+# ============================================================
+#: .\core\validators.py:18
+msgid "You cannot book your own property."
+msgstr "Нельзя забронировать собственное жильё."

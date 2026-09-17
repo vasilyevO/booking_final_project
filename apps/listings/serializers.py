@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from djmoney.contrib.django_rest_framework import MoneyField as MoneySerializerField
 from .models import Listing, ListingPhoto
+from django.utils.translation import gettext_lazy as _
 
 
 class ListingPhotoSerializer(serializers.ModelSerializer):
@@ -27,7 +28,7 @@ class PhotoReorderSerializer(serializers.Serializer):
     photo_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=False,
-        help_text="All photo ids of this listing, in the desired display order",
+        help_text=_("All photo ids of this listing, in the desired display order"),
     )
 
 

@@ -7,6 +7,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .models import User
+from django.utils.translation import gettext_lazy as _
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -17,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     groups = serializers.SlugRelatedField(
         many=True, read_only=True, slug_field="name",
-        help_text="Role groups the user belongs to",
+        help_text=_("Role groups the user belongs to"),
     )
 
     class Meta:
@@ -38,16 +39,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
         write_only=True, style={"input_type": "password"},
-        help_text="At least 8 characters, not entirely numeric",
+        help_text=_("At least 8 characters, not entirely numeric"),
     )
     password_confirm = serializers.CharField(
         write_only=True, style={"input_type": "password"},
-        help_text="Repeat the password exactly",
+        help_text=_("Repeat the password exactly"),
     )
     group = serializers.ChoiceField(
         choices=("tenants", "landlords"),
         write_only=True,
-        help_text="tenants may book and review, landlords may publish listings",
+        help_text=_("tenants may book and review, landlords may publish listings"),
     )
 
     class Meta:
@@ -75,7 +76,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         EN: Cross-field check: the two passwords must match.
         """
         if attrs["password"] != attrs["password_confirm"]:
-            raise serializers.ValidationError({"password_confirm": "Passwords do not match"})
+            raise serializers.ValidationError({"password_confirm": _("Passwords do not match")})
         return attrs
 
     @transaction.atomic

@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from .models import User
 from .serializers import RegisterSerializer, UserSerializer
+from django.utils.translation import gettext_lazy as _
 
 
 class UserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -23,7 +24,7 @@ class UserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     lookup_field = "public_id"
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary="Register a new account", request=RegisterSerializer)
+    @extend_schema(summary=_("Register a new account"), request=RegisterSerializer)
     @action(detail=False, methods=["post"], permission_classes=[AllowAny])
     def register(self, request):
         """
@@ -35,7 +36,7 @@ class UserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         user = serializer.save()
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(summary="Current user profile")
+    @extend_schema(summary=_("Current user profile"))
     @action(detail=False, methods=["get", "patch"])
     def me(self, request):
         """

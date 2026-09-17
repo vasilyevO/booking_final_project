@@ -9,8 +9,9 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
-
+from django.utils.translation import gettext_lazy as _
 from core.models import SoftDeleteModel, TimeStampedModel, ValidatedModel
+
 
 
 class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
@@ -52,21 +53,21 @@ class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
     #     guards against bulk_create, which skips validation.
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name="Оценка",
-        help_text="Rating from 1 to 5",
+        verbose_name=_("Rating"),
+        help_text=_("Rating from 1 to 5"),
     )
     text = models.TextField(
         max_length=2000,
         blank=True,
-        verbose_name="Текст",
-        help_text="Free-form review, up to 2000 characters",
+        verbose_name=_("Text"),
+        help_text=_("Free-form review, up to 2000 characters"),
     )
 
     history = HistoricalRecords()
 
     class Meta:
-        verbose_name = "Отзыв"
-        verbose_name_plural = "Отзывы"
+        verbose_name = _("Review")
+        verbose_name_plural = _("Reviews")
         ordering = ("-created_at", "-id")
         base_manager_name = "all_objects"
         constraints = [
@@ -104,9 +105,9 @@ class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
 
         if self.booking_id:
             if self.booking.status != BookingStatus.COMPLETED:
-                raise ValidationError("Отзыв можно оставить только после завершения аренды.")
+                raise ValidationError(_("A review can only be left after the stay is completed."))
             if self.booking.end_date > timezone.localdate():
-                raise ValidationError("Проживание ещё не закончилось.")
+                raise ValidationError(_("The stay has not ended yet."))
 
     def save(self, *args, **kwargs) -> None:
         """

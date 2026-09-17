@@ -6,6 +6,7 @@ from rest_framework import serializers
 from apps.listings.models import Listing
 from .models import Booking, BookingStatus
 from .services import create_booking
+from django.utils.translation import gettext_lazy as _
 
 
 class BookingReadSerializer(serializers.ModelSerializer):
@@ -48,16 +49,16 @@ class BookingCreateSerializer(serializers.Serializer):
     listing = serializers.SlugRelatedField(
         slug_field="public_id",
         queryset=Listing.objects.active(),
-        help_text="public_id of the listing to book",
+        help_text=_("public_id of the listing to book"),
     )
     start_date = serializers.DateField(
-        help_text="Check-in date, inclusive. Format YYYY-MM-DD",
+        help_text=_("Check-in date, inclusive. Format YYYY-MM-DD"),
     )
     end_date = serializers.DateField(
-        help_text="Check-out date, exclusive: this night is not charged",
+        help_text=_("Check-out date, exclusive: this night is not charged"),
     )
     guests = serializers.IntegerField(
-        min_value=1, default=1, help_text="Number of guests, at least 1",
+        min_value=1, default=1, help_text=_("Number of guests, at least 1"),
     )
 
     def create(self, validated_data: dict) -> Booking:
@@ -86,5 +87,5 @@ class BookingStatusSerializer(serializers.Serializer):
 
     status = serializers.ChoiceField(
         choices=BookingStatus.choices,
-        help_text="Target status. Allowed transitions are defined by the state machine",
+        help_text=_("Target status. Allowed transitions are defined by the state machine"),
     )

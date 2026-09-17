@@ -1,0 +1,26 @@
+# RU: контекст сборки отправляется демону Docker целиком. Без этого файла
+#     в него уедут .venv, .git и логи — сотни мегабайт и минуты на пустом месте.
+# EN: the whole build context is sent to the Docker daemon. Without this file
+#     .venv, .git and logs go with it — hundreds of megabytes and minutes wasted.
+.venv/
+venv/
+.git/
+.gitignore
+.idea/
+__pycache__/
+*.py[cod]
+
+# RU: секреты в образ не попадают НИКОГДА — образ можно распаковать
+#     и прочитать любым, у кого он есть.
+# EN: secrets NEVER go into an image — anyone holding it can unpack and read it.
+.env
+*.pem
+
+logs/
+*.log
+media/
+staticfiles/
+db.sqlite3
+django_ru.po
+django_de.po
+*.md

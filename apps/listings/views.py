@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db.models import Avg, Count, Q
+from django.utils.functional import lazy
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -22,20 +23,33 @@ from .serializers import (
     ListingWriteSerializer, PhotoReorderSerializer,
 )
 from .services import reorder_photos
+from django.utils.translation import gettext_lazy as _
 
 
 @extend_schema_view(
     list=extend_schema(
-        summary="Search and filter listings",
+        summary=_("Search and filter listings"),
         parameters=[
-            OpenApiParameter("search", str, description="Free-text search in title and description"),
-            OpenApiParameter("city", str, description="City in any spelling: Köln, Koeln, koln"),
-            OpenApiParameter("price_min", float, description="Minimum price per night, EUR"),
-            OpenApiParameter("price_max", float, description="Maximum price per night, EUR"),
-            OpenApiParameter("ordering", str, description="price_base, -price_base, created_at, -created_at, stats__views_count"),
+            OpenApiParameter("search", str, description=_("Free-text search in title and description")),
+            OpenApiParameter("city", str, description=_("City in any spelling: Köln, Koeln, koln")),
+            OpenApiParameter("price_min", float, description=_("Minimum price per night, EUR")),
+            OpenApiParameter("price_max", float, description=_("Maximum price per night, EUR")),
+            OpenApiParameter(
+                "ordering", str,
+                # RU: % у lazy-строки вычисляется сразу, при импорте, и фиксирует
+                #     язык по умолчанию. lazy() откладывает подстановку до рендера.
+                # EN: % on a lazy string is evaluated at import time and freezes
+                #     the default language. lazy() defers the substitution to render.
+                description=lazy(
+                    lambda: _("Sort order. Available fields: %(fields)s") % {
+                        "fields": "price_base, created_at, stats__views_count"
+                    },
+                    str,
+                )(),
+            ),
         ],
     ),
-    retrieve=extend_schema(summary="Listing details"),
+    retrieve=extend_schema(summary=_("Listing details")),
 )
 class ListingViewSet(viewsets.ModelViewSet):
     """
@@ -147,7 +161,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         """
         instance.delete()
 
-    @extend_schema(summary="Upload a photo", request=ListingPhotoSerializer)
+    @extend_schema(summary=_("Upload a photo"), request=ListingPhotoSerializer)
     @action(detail=True, methods=["post"], parser_classes=[MultiPartParser, FormParser])
     def photos(self, request, public_id=None):
         """
@@ -162,7 +176,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         serializer.save(listing=listing, position=(last.position + 10) if last else 10)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(summary="Reorder photos", request=PhotoReorderSerializer)
+    @extend_schema(summary=_("Reorder photos"), request=PhotoReorderSerializer)
     @action(detail=True, methods=["post"], url_path="photos/reorder")
     def reorder(self, request, public_id=None):
         """
@@ -176,7 +190,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         reorder_photos(listing=listing, photo_ids=serializer.validated_data["photo_ids"])
         return Response(ListingPhotoSerializer(listing.photos.all(), many=True).data)
 
-    @extend_schema(summary="Reviews of this listing", responses=ReviewReadSerializer)
+    @extend_schema(summary=_("Reviews of this listing"), responses=ReviewReadSerializer)
     @action(detail=True, methods=["get"])
     def reviews(self, request, public_id=None):
         """

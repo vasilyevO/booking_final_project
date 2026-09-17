@@ -1,0 +1,598 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: booking_final_project 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-16 13:12+0200\n"
+"PO-Revision-Date: 2026-09-16 13:00+0200\n"
+"Last-Translator: Oleg Vasilyev\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\apps\analytics\models.py:30
+msgid "Search query"
+msgstr "Suchanfrage"
+
+#: .\apps\analytics\models.py:31
+msgid "Search history"
+msgstr "Suchverlauf"
+
+#: .\apps\analytics\models.py:62
+msgid "Views"
+msgstr "Aufrufe"
+
+#: .\apps\analytics\models.py:63
+msgid "De-duplicated views, one per user per day"
+msgstr "Aufrufe ohne Duplikate: einer pro Nutzer pro Tag"
+
+#: .\apps\analytics\models.py:69 .\apps\analytics\models.py:70
+msgid "Listing statistics"
+msgstr "Inseratsstatistik"
+
+#: .\apps\analytics\models.py:105
+msgid "Listing view"
+msgstr "Inseratsaufruf"
+
+#: .\apps\analytics\models.py:106
+msgid "View history"
+msgstr "Aufrufverlauf"
+
+#: .\apps\analytics\serializers.py:15
+msgid "Normalised search keyword"
+msgstr "Normalisierter Suchbegriff"
+
+#: .\apps\analytics\serializers.py:16
+msgid "How many times it was searched"
+msgstr "Wie oft danach gesucht wurde"
+
+#: .\apps\analytics\serializers.py:27
+msgid "Total de-duplicated views"
+msgstr "Aufrufe ohne Duplikate insgesamt"
+
+#: .\apps\analytics\views.py:26
+msgid "Most searched keywords"
+msgstr "Meistgesuchte Suchbegriffe"
+
+#: .\apps\analytics\views.py:42
+msgid "Most viewed listings"
+msgstr "Meistaufgerufene Inserate"
+
+#: .\apps\bookings\models.py:27
+msgid "Pending"
+msgstr "Ausstehend"
+
+#: .\apps\bookings\models.py:28
+msgid "Confirmed"
+msgstr "Bestätigt"
+
+#: .\apps\bookings\models.py:29
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+#: .\apps\bookings\models.py:30
+msgid "Cancelled"
+msgstr "Storniert"
+
+#: .\apps\bookings\models.py:31
+msgid "Completed"
+msgstr "Abgeschlossen"
+
+#: .\apps\bookings\models.py:109
+msgid "Check-in"
+msgstr "Anreise"
+
+#: .\apps\bookings\models.py:110 .\apps\bookings\serializers.py:55
+msgid "Check-in date, inclusive. Format YYYY-MM-DD"
+msgstr "Anreisedatum, einschließlich. Format JJJJ-MM-TT"
+
+#: .\apps\bookings\models.py:113
+msgid "Check-out"
+msgstr "Abreise"
+
+#: .\apps\bookings\models.py:114 .\apps\bookings\serializers.py:58
+msgid "Check-out date, exclusive: this night is not charged"
+msgstr "Abreisedatum, ausschließlich: diese Nacht wird nicht berechnet"
+
+#: .\apps\bookings\models.py:124
+msgid "The number of guests must be a whole number."
+msgstr "Die Anzahl der Gäste muss eine ganze Zahl sein."
+
+#: .\apps\bookings\models.py:125
+msgid "Please specify the number of guests."
+msgstr "Bitte geben Sie die Anzahl der Gäste an."
+
+#: .\apps\bookings\models.py:127
+msgid "Guests"
+msgstr "Gäste"
+
+#: .\apps\bookings\models.py:128
+msgid "Number of guests, from 1 to 20"
+msgstr "Anzahl der Gäste, von 1 bis 20"
+
+#: .\apps\bookings\models.py:134
+msgid "Status"
+msgstr "Status"
+
+#: .\apps\bookings\models.py:135
+msgid "Lifecycle status. Changed only through the booking actions"
+msgstr "Lebenszyklus-Status. Wird nur über die Buchungsaktionen geändert"
+
+#: .\apps\bookings\models.py:146
+msgid "Discount, %"
+msgstr "Rabatt, %"
+
+#: .\apps\bookings\models.py:147
+msgid "Discount applied at booking time, 0 to 100 percent"
+msgstr "Rabatt zum Zeitpunkt der Buchung, 0 bis 100 Prozent"
+
+#: .\apps\bookings\models.py:156
+msgid "Total"
+msgstr "Gesamt"
+
+#: .\apps\bookings\models.py:157
+msgid "Agreed contract amount, frozen at booking time"
+msgstr "Vereinbarter Vertragsbetrag, zum Zeitpunkt der Buchung festgeschrieben"
+
+#: .\apps\bookings\models.py:167
+msgid "Exchange rate at booking time"
+msgstr "Wechselkurs zum Zeitpunkt der Buchung"
+
+#: .\apps\bookings\models.py:171
+msgid "Total in base currency"
+msgstr "Gesamt in Basiswährung"
+
+#: .\apps\bookings\models.py:187
+msgid "Booking"
+msgstr "Buchung"
+
+#: .\apps\bookings\models.py:188
+msgid "Bookings"
+msgstr "Buchungen"
+
+#: .\apps\bookings\models.py:204
+msgid "The check-out date must be later than the check-in date."
+msgstr "Das Abreisedatum muss nach dem Anreisedatum liegen."
+
+#: .\apps\bookings\models.py:209
+msgid "There must be at least one guest."
+msgstr "Es muss mindestens ein Gast angegeben werden."
+
+#: .\apps\bookings\models.py:214
+msgid "The total amount cannot be negative."
+msgstr "Der Gesamtbetrag darf nicht negativ sein."
+
+#: .\apps\bookings\models.py:219
+msgid "The price per night must be positive."
+msgstr "Der Preis pro Nacht muss positiv sein."
+
+#: .\apps\bookings\models.py:224
+msgid "Invalid booking status."
+msgstr "Ungültiger Buchungsstatus."
+
+#: .\apps\bookings\models.py:229
+msgid "The discount cannot exceed 100 percent."
+msgstr "Der Rabatt darf 100 Prozent nicht überschreiten."
+
+#: .\apps\bookings\models.py:321
+msgid "A booking cannot start in the past."
+msgstr "Eine Buchung kann nicht in der Vergangenheit beginnen."
+
+#: .\apps\bookings\models.py:337
+msgid "These dates are already booked."
+msgstr "Diese Daten sind bereits gebucht."
+
+#: .\apps\bookings\models.py:345
+#, python-format
+msgid "Transition %(old)s to %(new)s is not allowed."
+msgstr "Der Übergang von %(old)s zu %(new)s ist nicht zulässig."
+
+#: .\apps\bookings\models.py:351
+msgid "A booking cannot be completed before the check-out date."
+msgstr "Eine Buchung kann nicht vor dem Abreisedatum abgeschlossen werden."
+
+#: .\apps\bookings\serializers.py:52
+msgid "public_id of the listing to book"
+msgstr "public_id des zu buchenden Inserats"
+
+#: .\apps\bookings\serializers.py:61
+msgid "Number of guests, at least 1"
+msgstr "Anzahl der Gäste, mindestens 1"
+
+#: .\apps\bookings\serializers.py:90
+msgid "Target status. Allowed transitions are defined by the state machine"
+msgstr ""
+"Zielstatus. Zulässige Übergänge werden durch den Zustandsautomaten festgelegt"
+
+#: .\apps\bookings\views.py:19
+msgid "My bookings, as a tenant or as a landlord"
+msgstr "Meine Buchungen – als Mieter oder als Vermieter"
+
+#: .\apps\bookings\views.py:20
+msgid "Create a booking"
+msgstr "Buchung erstellen"
+
+#: .\apps\bookings\views.py:95
+msgid "Confirm a booking (landlord only)"
+msgstr "Buchung bestätigen (nur Vermieter)"
+
+#: .\apps\bookings\views.py:100
+msgid "Reject a booking (landlord only)"
+msgstr "Buchung ablehnen (nur Vermieter)"
+
+#: .\apps\bookings\views.py:105
+msgid "Cancel a booking (tenant or landlord)"
+msgstr "Buchung stornieren (Mieter oder Vermieter)"
+
+#: .\apps\bookings\views.py:115
+msgid "The free cancellation deadline has passed."
+msgstr "Die Frist für die kostenlose Stornierung ist abgelaufen."
+
+#: .\apps\listings\filters.py:16
+msgid "City, any spelling"
+msgstr "Stadt, beliebige Schreibweise"
+
+#: .\apps\listings\filters.py:18
+msgid "Minimum price, EUR"
+msgstr "Mindestpreis, EUR"
+
+#: .\apps\listings\filters.py:21
+msgid "Maximum price, EUR"
+msgstr "Höchstpreis, EUR"
+
+#: .\apps\listings\filters.py:26 .\apps\listings\models.py:263
+msgid "Property type"
+msgstr "Unterkunftsart"
+
+#: .\apps\listings\models.py:31
+msgid "Apartment"
+msgstr "Wohnung"
+
+#: .\apps\listings\models.py:32
+msgid "House"
+msgstr "Haus"
+
+#: .\apps\listings\models.py:33
+msgid "Studio"
+msgstr "Studio"
+
+#: .\apps\listings\models.py:34
+msgid "Room"
+msgstr "Zimmer"
+
+#: .\apps\listings\models.py:169
+msgid "Owner"
+msgstr "Eigentümer"
+
+#: .\apps\listings\models.py:173
+msgid "Title"
+msgstr "Titel"
+
+#: .\apps\listings\models.py:174
+msgid ""
+"Short headline shown in search results, e.g. 'Bright 2-room flat near Rhine'"
+msgstr ""
+"Kurze Überschrift für die Suchergebnisse, z. B. „Helle 2-Zimmer-Wohnung am "
+"Rhein“"
+
+#: .\apps\listings\models.py:177
+msgid "Description"
+msgstr "Beschreibung"
+
+#: .\apps\listings\models.py:178
+msgid "Full description: layout, furniture, neighbourhood, house rules"
+msgstr ""
+"Vollständige Beschreibung: Grundriss, Möblierung, Umgebung, Hausordnung"
+
+#: .\apps\listings\models.py:186
+msgid "City"
+msgstr "Stadt"
+
+#: .\apps\listings\models.py:187
+msgid "City as displayed, e.g. Köln"
+msgstr "Stadt wie angezeigt, z. B. Köln"
+
+#: .\apps\listings\models.py:193
+msgid "City (search)"
+msgstr "Stadt (Suche)"
+
+#: .\apps\listings\models.py:194
+msgid ""
+"Folded lowercase form used for search: Köln, Koeln and koln all become koeln"
+msgstr ""
+"Vereinheitlichte Kleinschreibung für die Suche: Köln, Koeln und koln werden "
+"zu koeln"
+
+#: .\apps\listings\models.py:199
+msgid "District"
+msgstr "Stadtteil"
+
+#: .\apps\listings\models.py:200
+msgid "District or quarter, optional"
+msgstr "Stadtteil oder Viertel, optional"
+
+#: .\apps\listings\models.py:205
+msgid "Address"
+msgstr "Adresse"
+
+#: .\apps\listings\models.py:206
+msgid "Street and house number, e.g. Hohe Straße 12. Optional"
+msgstr "Straße und Hausnummer, z. B. Hohe Straße 12. Optional"
+
+#: .\apps\listings\models.py:211
+msgid "Postal code"
+msgstr "Postleitzahl"
+
+#: .\apps\listings\models.py:212
+msgid "Postal code, e.g. 50667. Optional"
+msgstr "Postleitzahl, z. B. 50667. Optional"
+
+#: .\apps\listings\models.py:230
+msgid "Price per night"
+msgstr "Preis pro Nacht"
+
+#: .\apps\listings\models.py:231
+msgid "Price per one night in the chosen currency, e.g. 89.50"
+msgstr "Preis für eine Nacht in der gewählten Währung, z. B. 89.50"
+
+#: .\apps\listings\models.py:252
+msgid "Price in base currency"
+msgstr "Preis in Basiswährung"
+
+#: .\apps\listings\models.py:253
+msgid "Computed automatically, used for filtering and sorting"
+msgstr "Wird automatisch berechnet und zum Filtern und Sortieren verwendet"
+
+#: .\apps\listings\models.py:257
+msgid "Rooms"
+msgstr "Zimmer"
+
+#: .\apps\listings\models.py:258
+msgid "Number of rooms, from 1 to 50"
+msgstr "Anzahl der Zimmer, von 1 bis 50"
+
+#: .\apps\listings\models.py:264
+msgid "apartment, house, studio or room"
+msgstr "Wohnung, Haus, Studio oder Zimmer"
+
+#: .\apps\listings\models.py:268
+msgid "Active"
+msgstr "Aktiv"
+
+#: .\apps\listings\models.py:269
+msgid "Inactive listings are hidden from search but keep their bookings"
+msgstr ""
+"Inaktive Inserate sind in der Suche ausgeblendet, ihre Buchungen bleiben "
+"erhalten"
+
+#: .\apps\listings\models.py:289
+msgid "Listing"
+msgstr "Inserat"
+
+#: .\apps\listings\models.py:290
+msgid "Listings"
+msgstr "Inserate"
+
+#: .\apps\listings\models.py:299
+msgid "Price must be greater than zero."
+msgstr "Der Preis muss größer als null sein."
+
+#: .\apps\listings\models.py:309
+msgid "Unsupported currency."
+msgstr "Nicht unterstützte Währung."
+
+#: .\apps\listings\models.py:314
+msgid "A listing must have at least one room."
+msgstr "Ein Inserat muss mindestens ein Zimmer haben."
+
+#: .\apps\listings\models.py:319
+msgid "Unknown property type."
+msgstr "Unbekannte Unterkunftsart."
+
+#: .\apps\listings\models.py:418
+msgid "Photo"
+msgstr "Foto"
+
+#: .\apps\listings\models.py:419
+msgid "JPEG or PNG, at least 800x600 px"
+msgstr "JPEG oder PNG, mindestens 800x600 px"
+
+#: .\apps\listings\models.py:424
+msgid "Caption"
+msgstr "Bildunterschrift"
+
+#: .\apps\listings\models.py:425
+msgid "Optional caption, e.g. 'Living room'"
+msgstr "Optionale Bildunterschrift, z. B. „Wohnzimmer“"
+
+#: .\apps\listings\models.py:429
+msgid "Position"
+msgstr "Position"
+
+#: .\apps\listings\models.py:430
+msgid "Display order, ascending. The lowest value is the cover photo"
+msgstr "Anzeigereihenfolge, aufsteigend. Der niedrigste Wert ist das Titelbild"
+
+#: .\apps\listings\models.py:434
+msgid "Listing photo"
+msgstr "Inseratsfoto"
+
+#: .\apps\listings\models.py:435
+msgid "Listing photos"
+msgstr "Inseratsfotos"
+
+#: .\apps\listings\serializers.py:31
+msgid "All photo ids of this listing, in the desired display order"
+msgstr "Alle Foto-IDs dieses Inserats in der gewünschten Anzeigereihenfolge"
+
+#: .\apps\listings\services.py:22
+msgid "Photo list does not match the listing"
+msgstr "Die Fotoliste passt nicht zum Inserat"
+
+#: .\apps\listings\views.py:31
+msgid "Search and filter listings"
+msgstr "Inserate suchen und filtern"
+
+#: .\apps\listings\views.py:33
+msgid "Free-text search in title and description"
+msgstr "Freitextsuche in Titel und Beschreibung"
+
+#: .\apps\listings\views.py:34
+msgid "City in any spelling: Köln, Koeln, koln"
+msgstr "Stadt in beliebiger Schreibweise: Köln, Koeln, koln"
+
+#: .\apps\listings\views.py:35
+msgid "Minimum price per night, EUR"
+msgstr "Mindestpreis pro Nacht, EUR"
+
+#: .\apps\listings\views.py:36
+msgid "Maximum price per night, EUR"
+msgstr "Höchstpreis pro Nacht, EUR"
+
+#: .\apps\listings\views.py:44
+#, python-format
+msgid "Sort order. Available fields: %(fields)s"
+msgstr "Sortierreihenfolge. Verfügbare Felder: %(fields)s"
+
+#: .\apps\listings\views.py:52
+msgid "Listing details"
+msgstr "Inseratsdetails"
+
+#: .\apps\listings\views.py:164
+msgid "Upload a photo"
+msgstr "Foto hochladen"
+
+#: .\apps\listings\views.py:179
+msgid "Reorder photos"
+msgstr "Fotos neu anordnen"
+
+#: .\apps\listings\views.py:193
+msgid "Reviews of this listing"
+msgstr "Bewertungen dieses Inserats"
+
+#: .\apps\reviews\models.py:56
+msgid "Rating"
+msgstr "Bewertung"
+
+#: .\apps\reviews\models.py:57
+msgid "Rating from 1 to 5"
+msgstr "Bewertung von 1 bis 5"
+
+#: .\apps\reviews\models.py:62
+msgid "Text"
+msgstr "Text"
+
+#: .\apps\reviews\models.py:63
+msgid "Free-form review, up to 2000 characters"
+msgstr "Freitext-Bewertung, bis zu 2000 Zeichen"
+
+#: .\apps\reviews\models.py:69
+msgid "Review"
+msgstr "Bewertung"
+
+#: .\apps\reviews\models.py:70
+msgid "Reviews"
+msgstr "Bewertungen"
+
+#: .\apps\reviews\models.py:108
+msgid "A review can only be left after the stay is completed."
+msgstr ""
+"Eine Bewertung kann erst nach Abschluss des Aufenthalts abgegeben werden."
+
+#: .\apps\reviews\models.py:110
+msgid "The stay has not ended yet."
+msgstr "Der Aufenthalt ist noch nicht beendet."
+
+#: .\apps\reviews\serializers.py:34
+msgid "public_id of the completed booking being reviewed"
+msgstr "public_id der abgeschlossenen Buchung, die bewertet wird"
+
+#: .\apps\reviews\serializers.py:50
+msgid "You can only review your own stay"
+msgstr "Sie können nur Ihren eigenen Aufenthalt bewerten"
+
+#: .\apps\reviews\serializers.py:52
+msgid "This booking already has a review"
+msgstr "Für diese Buchung gibt es bereits eine Bewertung"
+
+#: .\apps\users\models.py:64
+msgid "email"
+msgstr "E-Mail"
+
+#: .\apps\users\models.py:67
+msgid "Phone"
+msgstr "Telefon"
+
+#: .\apps\users\models.py:75
+msgid "User"
+msgstr "Benutzer"
+
+#: .\apps\users\models.py:76
+msgid "Users"
+msgstr "Benutzer"
+
+#: .\apps\users\serializers.py:21
+msgid "Role groups the user belongs to"
+msgstr "Rollengruppen, denen der Benutzer angehört"
+
+#: .\apps\users\serializers.py:42
+msgid "At least 8 characters, not entirely numeric"
+msgstr "Mindestens 8 Zeichen, nicht nur Ziffern"
+
+#: .\apps\users\serializers.py:46
+msgid "Repeat the password exactly"
+msgstr "Passwort exakt wiederholen"
+
+#: .\apps\users\serializers.py:51
+msgid "tenants may book and review, landlords may publish listings"
+msgstr ""
+"tenants dürfen buchen und bewerten, landlords dürfen Inserate veröffentlichen"
+
+#: .\apps\users\serializers.py:79
+msgid "Passwords do not match"
+msgstr "Die Passwörter stimmen nicht überein"
+
+#: .\apps\users\views.py:27
+msgid "Register a new account"
+msgstr "Neues Konto registrieren"
+
+#: .\apps\users\views.py:39
+msgid "Current user profile"
+msgstr "Profil des aktuellen Benutzers"
+
+#: .\config\settings.py:255
+msgid "English"
+msgstr "Englisch"
+
+#: .\config\settings.py:256
+msgid "German"
+msgstr "Deutsch"
+
+#: .\config\settings.py:257
+msgid "Russian"
+msgstr "Russisch"
+
+#: .\core\permissions.py:38
+msgid "You may only modify your own objects."
+msgstr "Sie dürfen nur Ihre eigenen Objekte ändern."
+
+#: .\core\permissions.py:56
+msgid "A booking is only available to its participants."
+msgstr "Eine Buchung ist nur für ihre Beteiligten zugänglich."
+
+#: .\core\permissions.py:71
+msgid "Only the property owner may confirm or reject a booking."
+msgstr ""
+"Nur der Eigentümer der Unterkunft darf eine Buchung bestätigen oder ablehnen."
+
+#: .\core\permissions.py:87
+msgid "A review may only be edited by its author, within 14 days."
+msgstr ""
+"Eine Bewertung darf nur von ihrem Verfasser und nur innerhalb von 14 Tagen "
+"bearbeitet werden."
+
+#: .\core\validators.py:18
+msgid "You cannot book your own property."
+msgstr "Sie können Ihre eigene Unterkunft nicht buchen."

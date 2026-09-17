@@ -6,13 +6,15 @@ from django.db import transaction
 from apps.listings.models import Listing
 from decimal import ROUND_HALF_UP, Decimal
 from .models import Booking, BookingStatus
+import logging
 
+logger = logging.getLogger(__name__)     # "apps.bookings.services"
 
 @transaction.atomic
 def create_booking(
-    *, tenant, listing_id: int, start_date: date, end_date: date,
-    guests: int = 1, discount_percent: int = 0,
-) -> Booking:
+        *, tenant, listing_id, start_date, end_date, guests=1,
+        discount_percent=0) -> Booking:
+    listing = Listing.objects.select_for_update().get(pk=listing_id, is_active=True)
     """
     RU: Отвечает за транзакцию, блокировку и заморозку цены с курсом.
         Проверки выполняет Booking.clean() через full_clean() внутри
@@ -48,6 +50,18 @@ def create_booking(
     ).quantize(Decimal("0.00000001"), rounding=ROUND_HALF_UP)
 
     booking.save()
+    # RU: INFO для успешных бизнес-операций. request_id подставится сам,
+    #     поэтому строка связывается с HTTP-запросом без ручной передачи.
+    # EN: INFO for successful business operations. The request_id is injected
+    #     automatically, so the line ties back to the HTTP request with no
+    #     manual plumbing.
+    logger.info(
+        "booking created id=%s listing=%s tenant=%s %s..%s total=%s %s",
+        booking.pk, listing.pk, tenant.pk, start_date, end_date,
+        # RU: .amount — Decimal без локального форматирования, валюта отдельно
+        # EN: .amount is a Decimal with no locale formatting, currency separately
+        booking.total_price.amount, booking.total_price.currency,
+    )
     return booking
 
 

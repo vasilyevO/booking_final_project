@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from core.models import TimeStampedModel
 
@@ -26,8 +27,8 @@ class SearchQuery(TimeStampedModel):
     results_count = models.PositiveIntegerField(default=0)
 
     class Meta:
-        verbose_name = "Поисковый запрос"
-        verbose_name_plural = "История поиска"
+        verbose_name = _("Search query")
+        verbose_name_plural = _("Search history")
         ordering = ("-created_at",)
         indexes = [
             models.Index(fields=("keyword", "-created_at"), name="search_keyword_created_idx")
@@ -58,15 +59,15 @@ class ListingStats(models.Model):
     )
     views_count = models.PositiveIntegerField(
         default=0,
-        verbose_name="Просмотров",
-        help_text="De-duplicated views, one per user per day",
+        verbose_name=_("Views"),
+        help_text=_("De-duplicated views, one per user per day"),
     )
     bookings_count = models.PositiveIntegerField(default=0)
     last_viewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name = "Статистика объявления"
-        verbose_name_plural = "Статистика объявлений"
+        verbose_name = _("Listing statistics")
+        verbose_name_plural = _("Listing statistics")
         indexes = [
             # RU: под сортировку «сначала популярные»
             # EN: supports the "most popular first" ordering
@@ -101,8 +102,8 @@ class ListingView(TimeStampedModel):
     viewed_on = models.DateField(default=timezone.localdate)
 
     class Meta:
-        verbose_name = "Просмотр объявления"
-        verbose_name_plural = "История просмотров"
+        verbose_name = _("Listing view")
+        verbose_name_plural = _("View history")
         ordering = ("-created_at",)
         constraints = [
             # RU: в MySQL NULL != NULL, поэтому анонимы дедуплицируются

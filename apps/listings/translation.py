@@ -1,4 +1,3 @@
-# apps/listings/translation.py
 from modeltranslation.translator import TranslationOptions, register
 
 from .models import Listing, ListingPhoto

@@ -1,0 +1,9 @@
+{% load i18n %}{% blocktranslate with title=listing.title %}New booking request for "{{ title }}".{% endblocktranslate %}
+
+{% translate "Guest" %}: {{ booking.tenant.email }}
+{% translate "Check-in" %}: {{ booking.start_date }}
+{% translate "Check-out" %}: {{ booking.end_date }}
+{% translate "Guests" %}: {{ booking.guests }}
+{% translate "Total" %}: {{ booking.total_price }}
+
+{{ url }}

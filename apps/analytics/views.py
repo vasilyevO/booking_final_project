@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from apps.listings.models import Listing
 from .models import ListingStats, SearchQuery
 from .serializers import PopularKeywordSerializer, PopularListingSerializer
+from django.utils.translation import gettext_lazy as _
 
 
 class AnalyticsViewSet(viewsets.GenericViewSet):
@@ -22,7 +23,7 @@ class AnalyticsViewSet(viewsets.GenericViewSet):
 
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary="Most searched keywords", responses=PopularKeywordSerializer)
+    @extend_schema(summary=_("Most searched keywords"), responses=PopularKeywordSerializer)
     @action(detail=False, methods=["get"], url_path="popular-keywords")
     def popular_keywords(self, request):
         """
@@ -38,7 +39,7 @@ class AnalyticsViewSet(viewsets.GenericViewSet):
         )
         return Response(PopularKeywordSerializer(queryset, many=True).data)
 
-    @extend_schema(summary="Most viewed listings", responses=PopularListingSerializer)
+    @extend_schema(summary=_("Most viewed listings"), responses=PopularListingSerializer)
     @action(detail=False, methods=["get"], url_path="popular-listings")
     def popular_listings(self, request):
         """

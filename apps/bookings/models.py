@@ -24,11 +24,11 @@ class BookingStatus(models.TextChoices):
     EN: Booking lifecycle statuses.
     """
 
-    PENDING = "pending", "Ожидает подтверждения"
-    CONFIRMED = "confirmed", "Подтверждено"
-    REJECTED = "rejected", "Отклонено"
-    CANCELLED = "cancelled", "Отменено"
-    COMPLETED = "completed", "Завершено"
+    PENDING = "pending", _("Pending")
+    CONFIRMED = "confirmed", _("Confirmed")
+    REJECTED = "rejected", _("Rejected")
+    CANCELLED = "cancelled", _("Cancelled")
+    COMPLETED = "completed", _("Completed")
 
 
 # RU: статусы, при которых даты считаются занятыми.
@@ -106,12 +106,12 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     )
 
     start_date = models.DateField(
-        verbose_name="Заезд",
-        help_text="Check-in date, inclusive. Format YYYY-MM-DD",
+        verbose_name=_("Check-in"),
+        help_text=_("Check-in date, inclusive. Format YYYY-MM-DD"),
     )
     end_date = models.DateField(
-        verbose_name="Выезд",
-        help_text="Check-out date, exclusive: this night is not charged",
+        verbose_name=_("Check-out"),
+        help_text=_("Check-out date, exclusive: this night is not charged"),
     )
     guests = models.PositiveSmallIntegerField(
         default=1,
@@ -121,18 +121,18 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         #     the database CHECK, returning 500 to the client instead of 400.
         validators=[MinValueValidator(1), MaxValueValidator(20)],
         error_messages={
-            "invalid": "Количество гостей должно быть больше нуля.",
-            "null": "Укажите количество гостей.",
+            "invalid": _("The number of guests must be a whole number."),
+            "null": _("Please specify the number of guests."),
         },
-        verbose_name="Гостей",
-        help_text="Number of guests, from 1 to 20",
+        verbose_name=_("Guests"),
+        help_text=_("Number of guests, from 1 to 20"),
     )
     status = models.CharField(
         max_length=16,
         choices=BookingStatus.choices,
         default=BookingStatus.PENDING,
-        verbose_name="Статус",
-        help_text="Lifecycle status. Changed only through the booking actions",
+        verbose_name=_("Status"),
+        help_text=_("Lifecycle status. Changed only through the booking actions"),
     )
 
     # RU: снимки на момент бронирования — цена и заголовок объявления
@@ -143,8 +143,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     discount_percent = models.PositiveSmallIntegerField(
         default=0,
         validators=[MaxValueValidator(100)],
-        verbose_name="Скидка, %",
-        help_text="Discount applied at booking time, 0 to 100 percent",
+        verbose_name=_("Discount, %"),
+        help_text=_("Discount applied at booking time, 0 to 100 percent"),
     )
     price_per_night_snapshot = MoneyField(
         max_digits=10, decimal_places=2,
@@ -184,8 +184,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     history = HistoricalRecords()
 
     class Meta:
-        verbose_name = "Бронирование"
-        verbose_name_plural = "Бронирования"
+        verbose_name = _("Booking")
+        verbose_name_plural = _("Bookings")
         ordering = ("-created_at", "-id")
         permissions = [
             ("confirm_booking", "Can confirm booking"),
@@ -201,32 +201,32 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
             models.CheckConstraint(
                 condition=Q(end_date__gt=F("start_date")),
                 name="booking_end_after_start",
-                violation_error_message="Дата выезда должна быть позже даты заезда.",
+                violation_error_message=_("The check-out date must be later than the check-in date."),
             ),
             models.CheckConstraint(
                 condition=Q(guests__gte=1),
                 name="booking_guests_gte_one",
-                violation_error_message="Количество гостей должно быть не меньше одного.",
+                violation_error_message=_("There must be at least one guest."),
             ),
             models.CheckConstraint(
                 condition=Q(total_price__gte=0),
                 name="booking_total_price_gte_zero",
-                violation_error_message="Итоговая сумма не может быть отрицательной.",
+                violation_error_message=_("The total amount cannot be negative."),
             ),
             models.CheckConstraint(
                 condition=Q(price_per_night_snapshot__gt=0),
                 name="booking_snapshot_price_positive",
-                violation_error_message="Цена за ночь должна быть положительной.",
+                violation_error_message=_("The price per night must be positive."),
             ),
             models.CheckConstraint(
                 condition=Q(status__in=BookingStatus.values),
                 name="booking_status_valid",
-                violation_error_message="Недопустимый статус бронирования.",
+                violation_error_message=_("Invalid booking status."),
             ),
             models.CheckConstraint(
                 condition=Q(discount_percent__lte=100),
                 name="booking_discount_max_100",
-                violation_error_message="Скидка не может превышать 100 процентов.",
+                violation_error_message=_("The discount cannot exceed 100 percent."),
             ),
         ]
 

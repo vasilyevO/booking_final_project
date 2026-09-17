@@ -1,0 +1,1735 @@
+openapi: 3.0.3
+info:
+  title: Booking API
+  version: 1.0.0
+  description: Housing rental booking service
+paths:
+  /api/analytics/popular-keywords/:
+    get:
+      operationId: analytics_popular_keywords_retrieve
+      description: |-
+        RU: Топ ключевых слов. values().annotate() группирует в БД —
+            это GROUP BY, а не подсчёт в Python.
+        EN: Top keywords. values().annotate() groups in the database —
+            a GROUP BY, not counting in Python.
+      summary: Most searched keywords
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PopularKeyword'
+          description: ''
+  /api/analytics/popular-listings/:
+    get:
+      operationId: analytics_popular_listings_retrieve
+      description: |-
+        RU: Объявления по числу просмотров. Владелец видит свои, админ — все.
+        EN: Listings by view count. An owner sees their own, staff see all.
+      summary: Most viewed listings
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PopularListing'
+          description: ''
+  /api/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/bookings/:
+    get:
+      operationId: bookings_list
+      description: |-
+        RU: Бронирования. Полного update нет намеренно: статус меняется только
+            явными действиями, каждое со своей проверкой прав.
+        EN: Bookings. There is deliberately no full update: the status changes only
+            through explicit actions, each with its own permission check.
+      summary: My bookings, as a tenant or as a landlord
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookingReadList'
+          description: ''
+    post:
+      operationId: bookings_create
+      description: |-
+        RU: Бронирования. Полного update нет намеренно: статус меняется только
+            явными действиями, каждое со своей проверкой прав.
+        EN: Bookings. There is deliberately no full update: the status changes only
+            through explicit actions, each with its own permission check.
+      summary: Create a booking
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingCreate'
+          description: ''
+  /api/bookings/{public_id}/:
+    get:
+      operationId: bookings_retrieve
+      description: |-
+        RU: Бронирования. Полного update нет намеренно: статус меняется только
+            явными действиями, каждое со своей проверкой прав.
+        EN: Bookings. There is deliberately no full update: the status changes only
+            through explicit actions, each with its own permission check.
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingRead'
+          description: ''
+  /api/bookings/{public_id}/cancel/:
+    post:
+      operationId: bookings_cancel_create
+      description: |-
+        RU: Отменить может любой участник. Срок отмены проверяет модель.
+        EN: Either participant may cancel. The deadline is checked by the model.
+      summary: Cancel a booking (tenant or landlord)
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingRead'
+          description: ''
+  /api/bookings/{public_id}/confirm/:
+    post:
+      operationId: bookings_confirm_create
+      description: |-
+        RU: Бронирования. Полного update нет намеренно: статус меняется только
+            явными действиями, каждое со своей проверкой прав.
+        EN: Bookings. There is deliberately no full update: the status changes only
+            through explicit actions, each with its own permission check.
+      summary: Confirm a booking (landlord only)
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingRead'
+          description: ''
+  /api/bookings/{public_id}/reject/:
+    post:
+      operationId: bookings_reject_create
+      description: |-
+        RU: Бронирования. Полного update нет намеренно: статус меняется только
+            явными действиями, каждое со своей проверкой прав.
+        EN: Bookings. There is deliberately no full update: the status changes only
+            through explicit actions, each with its own permission check.
+      summary: Reject a booking (landlord only)
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingRead'
+          description: ''
+  /api/listings/:
+    get:
+      operationId: listings_list
+      description: |-
+        RU: Поисковый запрос попадает в аналитику — без этой записи
+            эндпоинт popular-keywords всегда отдавал пустой список.
+        EN: The search term is recorded for analytics — without this write the
+            popular-keywords endpoint always returned an empty list.
+      summary: Search and filter listings
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: string
+        description: 'City in any spelling: Köln, Koeln, koln'
+      - in: query
+        name: district
+        schema:
+          type: string
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Sort order. Available fields: price_base, created_at, stats__views_count'
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: price_max
+        schema:
+          type: number
+          format: double
+        description: Maximum price per night, EUR
+      - in: query
+        name: price_min
+        schema:
+          type: number
+          format: double
+        description: Minimum price per night, EUR
+      - in: query
+        name: property_type
+        schema:
+          type: string
+          enum:
+          - apartment
+          - house
+          - room
+          - studio
+        description: |-
+          Property type
+
+          * `apartment` - Apartment
+          * `house` - House
+          * `studio` - Studio
+          * `room` - Room
+      - in: query
+        name: rooms_max
+        schema:
+          type: integer
+      - in: query
+        name: rooms_min
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Free-text search in title and description
+      tags:
+      - listings
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedListingListList'
+          description: ''
+    post:
+      operationId: listings_create
+      description: |-
+        RU: Объявления. Чтение открыто анонимам, создание требует группы
+            landlords, редактирование — владения объектом.
+        EN: Listings. Reading is open to anonymous users, creating requires the
+            landlords group, editing requires object ownership.
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListingWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListingWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingWrite'
+          description: ''
+  /api/listings/{public_id}/:
+    get:
+      operationId: listings_retrieve
+      description: |-
+        RU: Просмотр фиксируется в analytics и не трогает строку объявления.
+        EN: The view is recorded in analytics and never touches the listing row.
+      summary: Listing details
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingDetail'
+          description: ''
+    put:
+      operationId: listings_update
+      description: |-
+        RU: Объявления. Чтение открыто анонимам, создание требует группы
+            landlords, редактирование — владения объектом.
+        EN: Listings. Reading is open to anonymous users, creating requires the
+            landlords group, editing requires object ownership.
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListingWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListingWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingWrite'
+          description: ''
+    patch:
+      operationId: listings_partial_update
+      description: |-
+        RU: Объявления. Чтение открыто анонимам, создание требует группы
+            landlords, редактирование — владения объектом.
+        EN: Listings. Reading is open to anonymous users, creating requires the
+            landlords group, editing requires object ownership.
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedListingWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedListingWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedListingWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingWrite'
+          description: ''
+    delete:
+      operationId: listings_destroy
+      description: |-
+        RU: Объявления. Чтение открыто анонимам, создание требует группы
+            landlords, редактирование — владения объектом.
+        EN: Listings. Reading is open to anonymous users, creating requires the
+            landlords group, editing requires object ownership.
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/listings/{public_id}/photos/:
+    post:
+      operationId: listings_photos_create
+      description: |-
+        RU: Загрузка фото. Позиция по умолчанию — в конец списка.
+        EN: Photo upload. The default position appends to the end of the list.
+      summary: Upload a photo
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListingPhoto'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListingPhoto'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingList'
+          description: ''
+  /api/listings/{public_id}/photos/reorder/:
+    post:
+      operationId: listings_photos_reorder_create
+      description: |-
+        RU: Перестановка фото целиком, одной транзакцией.
+        EN: Reorders all photos at once, in a single transaction.
+      summary: Reorder photos
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhotoReorder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PhotoReorder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PhotoReorder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingList'
+          description: ''
+  /api/listings/{public_id}/reviews/:
+    get:
+      operationId: listings_reviews_retrieve
+      description: |-
+        RU: Отзывы объявления. Открыто всем, мягко удалённые скрыты.
+        EN: Reviews of the listing. Public, soft-deleted ones are hidden.
+      summary: Reviews of this listing
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewRead'
+          description: ''
+  /api/reviews/:
+    get:
+      operationId: reviews_list
+      description: |-
+        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
+            доступно только админу через админку, и только мягкое.
+        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+            a staff-only action through the admin, and soft only.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewReadList'
+          description: ''
+    post:
+      operationId: reviews_create
+      description: |-
+        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
+            доступно только админу через админку, и только мягкое.
+        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+            a staff-only action through the admin, and soft only.
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewCreate'
+          description: ''
+  /api/reviews/{id}/:
+    get:
+      operationId: reviews_retrieve
+      description: |-
+        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
+            доступно только админу через админку, и только мягкое.
+        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+            a staff-only action through the admin, and soft only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Review.
+        required: true
+      tags:
+      - reviews
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewRead'
+          description: ''
+    put:
+      operationId: reviews_update
+      description: |-
+        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
+            доступно только админу через админку, и только мягкое.
+        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+            a staff-only action through the admin, and soft only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Review.
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewCreate'
+          description: ''
+    patch:
+      operationId: reviews_partial_update
+      description: |-
+        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
+            доступно только админу через админку, и только мягкое.
+        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+            a staff-only action through the admin, and soft only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Review.
+        required: true
+      tags:
+      - reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewCreate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewCreate'
+          description: ''
+  /api/users/{public_id}/:
+    get:
+      operationId: users_retrieve
+      description: |-
+        RU: Пользователи. Списка нет намеренно: перечень всех аккаунтов —
+            утечка персональных данных, для проекта он не нужен.
+        EN: Users. There is deliberately no list endpoint: enumerating all accounts
+            leaks personal data and the project does not need it.
+      parameters:
+      - in: path
+        name: public_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/me/:
+    get:
+      operationId: users_me_retrieve
+      description: |-
+        RU: Свой профиль. Отдельный эндпоинт, чтобы клиенту не нужно было
+            знать собственный public_id.
+        EN: The caller's own profile. A dedicated endpoint so the client does
+            not need to know its own public_id.
+      summary: Current user profile
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_me_partial_update
+      description: |-
+        RU: Свой профиль. Отдельный эндпоинт, чтобы клиенту не нужно было
+            знать собственный public_id.
+        EN: The caller's own profile. A dedicated endpoint so the client does
+            not need to know its own public_id.
+      summary: Current user profile
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/register/:
+    post:
+      operationId: users_register_create
+      description: |-
+        RU: Регистрация. Единственный эндпоинт, открытый анонимам.
+        EN: Registration. The only endpoint open to anonymous users.
+      summary: Register a new account
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    BookingCreate:
+      type: object
+      description: |-
+        RU: Создание брони. Не ModelSerializer: снимки цены и заголовка
+            считает сервис, клиент их передать не должен.
+        EN: Booking creation. Not a ModelSerializer: the price and title snapshots
+            are computed by the service and must not come from the client.
+      properties:
+        listing:
+          type: string
+          format: uuid
+          description: public_id of the listing to book
+        start_date:
+          type: string
+          format: date
+          description: Check-in date, inclusive. Format YYYY-MM-DD
+        end_date:
+          type: string
+          format: date
+          description: 'Check-out date, exclusive: this night is not charged'
+        guests:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Number of guests, at least 1
+      required:
+      - end_date
+      - listing
+      - start_date
+    BookingRead:
+      type: object
+      description: |-
+        RU: Представление брони для владельца и арендатора.
+        EN: Booking representation for both the landlord and the tenant.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        listing_public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        listing_title_snapshot:
+          type: string
+          maxLength: 200
+        tenant_email:
+          type: string
+          format: email
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          title: Check-in
+          description: Check-in date, inclusive. Format YYYY-MM-DD
+        end_date:
+          type: string
+          format: date
+          title: Check-out
+          description: 'Check-out date, exclusive: this night is not charged'
+        nights:
+          type: integer
+          readOnly: true
+        guests:
+          type: integer
+          maximum: 20
+          minimum: 1
+          description: Number of guests, from 1 to 20
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            Lifecycle status. Changed only through the booking actions
+
+            * `pending` - Pending
+            * `confirmed` - Confirmed
+            * `rejected` - Rejected
+            * `cancelled` - Cancelled
+            * `completed` - Completed
+        price_per_night_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        total_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Total
+          description: Agreed contract amount, frozen at booking time
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - end_date
+      - listing_public_id
+      - listing_title_snapshot
+      - nights
+      - price_per_night_snapshot
+      - public_id
+      - start_date
+      - tenant_email
+      - total_price
+    GroupEnum:
+      enum:
+      - tenants
+      - landlords
+      type: string
+      description: |-
+        * `tenants` - tenants
+        * `landlords` - landlords
+    ListingDetail:
+      type: object
+      description: |-
+        RU: Полная карточка объявления со всеми фото.
+        EN: Full listing card including all photos.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          description: Short headline shown in search results, e.g. 'Bright 2-room
+            flat near Rhine'
+          maxLength: 200
+        city:
+          type: string
+          description: City as displayed, e.g. Köln
+          maxLength: 100
+        district:
+          type: string
+          description: District or quarter, optional
+          maxLength: 100
+        property_type:
+          allOf:
+          - $ref: '#/components/schemas/PropertyTypeEnum'
+          description: |-
+            apartment, house, studio or room
+
+            * `apartment` - Apartment
+            * `house` - House
+            * `studio` - Studio
+            * `room` - Room
+        rooms:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Number of rooms, from 1 to 50
+        price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_per_night_currency:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Inactive listings are hidden from search but keep their bookings
+        rating:
+          type: number
+          format: double
+          readOnly: true
+        reviews_count:
+          type: integer
+          readOnly: true
+          default: 0
+        cover_photo:
+          type: string
+          nullable: true
+          readOnly: true
+        owner_email:
+          type: string
+          format: email
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        description:
+          type: string
+          description: 'Full description: layout, furniture, neighbourhood, house
+            rules'
+        address:
+          type: string
+          description: Street and house number, e.g. Hohe Straße 12. Optional
+          maxLength: 200
+        postal_code:
+          type: string
+          description: Postal code, e.g. 50667. Optional
+          maxLength: 16
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListingPhoto'
+          readOnly: true
+        views_count:
+          type: integer
+          readOnly: true
+          default: 0
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - city
+      - cover_photo
+      - created_at
+      - description
+      - owner_email
+      - photos
+      - price_per_night
+      - price_per_night_currency
+      - property_type
+      - public_id
+      - rating
+      - reviews_count
+      - rooms
+      - title
+      - updated_at
+      - views_count
+    ListingList:
+      type: object
+      description: |-
+        RU: Краткое представление для списка и поиска.
+        EN: Compact representation for list and search results.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          description: Short headline shown in search results, e.g. 'Bright 2-room
+            flat near Rhine'
+          maxLength: 200
+        city:
+          type: string
+          description: City as displayed, e.g. Köln
+          maxLength: 100
+        district:
+          type: string
+          description: District or quarter, optional
+          maxLength: 100
+        property_type:
+          allOf:
+          - $ref: '#/components/schemas/PropertyTypeEnum'
+          description: |-
+            apartment, house, studio or room
+
+            * `apartment` - Apartment
+            * `house` - House
+            * `studio` - Studio
+            * `room` - Room
+        rooms:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Number of rooms, from 1 to 50
+        price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        price_per_night_currency:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+          description: Inactive listings are hidden from search but keep their bookings
+        rating:
+          type: number
+          format: double
+          readOnly: true
+        reviews_count:
+          type: integer
+          readOnly: true
+          default: 0
+        cover_photo:
+          type: string
+          nullable: true
+          readOnly: true
+        owner_email:
+          type: string
+          format: email
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - city
+      - cover_photo
+      - created_at
+      - owner_email
+      - price_per_night
+      - price_per_night_currency
+      - property_type
+      - public_id
+      - rating
+      - reviews_count
+      - rooms
+      - title
+    ListingPhoto:
+      type: object
+      description: |-
+        RU: Фотография объявления.
+        EN: A listing photo.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          title: Photo
+          description: JPEG or PNG, at least 800x600 px
+        caption:
+          type: string
+          description: Optional caption, e.g. 'Living room'
+          maxLength: 200
+        position:
+          type: integer
+          maximum: 65535
+          minimum: 0
+          description: Display order, ascending. The lowest value is the cover photo
+      required:
+      - id
+      - image
+    ListingWrite:
+      type: object
+      description: |-
+        RU: Создание и редактирование. Владелец подставляется из запроса,
+            клиент передать его не может.
+        EN: Create and update. The owner is taken from the request; the client
+            cannot supply it.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          description: Short headline shown in search results, e.g. 'Bright 2-room
+            flat near Rhine'
+          maxLength: 200
+        description:
+          type: string
+          description: 'Full description: layout, furniture, neighbourhood, house
+            rules'
+        city:
+          type: string
+          description: City as displayed, e.g. Köln
+          maxLength: 100
+        district:
+          type: string
+          description: District or quarter, optional
+          maxLength: 100
+        address:
+          type: string
+          description: Street and house number, e.g. Hohe Straße 12. Optional
+          maxLength: 200
+        postal_code:
+          type: string
+          description: Postal code, e.g. 50667. Optional
+          maxLength: 16
+        price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Price per one night in the chosen currency, e.g. 89.50
+        rooms:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Number of rooms, from 1 to 50
+        property_type:
+          allOf:
+          - $ref: '#/components/schemas/PropertyTypeEnum'
+          description: |-
+            apartment, house, studio or room
+
+            * `apartment` - Apartment
+            * `house` - House
+            * `studio` - Studio
+            * `room` - Room
+        is_active:
+          type: boolean
+          title: Active
+          description: Inactive listings are hidden from search but keep their bookings
+      required:
+      - city
+      - description
+      - price_per_night
+      - property_type
+      - public_id
+      - rooms
+      - title
+    PaginatedBookingReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingRead'
+    PaginatedListingListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListingList'
+    PaginatedReviewReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewRead'
+    PatchedListingWrite:
+      type: object
+      description: |-
+        RU: Создание и редактирование. Владелец подставляется из запроса,
+            клиент передать его не может.
+        EN: Create and update. The owner is taken from the request; the client
+            cannot supply it.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          description: Short headline shown in search results, e.g. 'Bright 2-room
+            flat near Rhine'
+          maxLength: 200
+        description:
+          type: string
+          description: 'Full description: layout, furniture, neighbourhood, house
+            rules'
+        city:
+          type: string
+          description: City as displayed, e.g. Köln
+          maxLength: 100
+        district:
+          type: string
+          description: District or quarter, optional
+          maxLength: 100
+        address:
+          type: string
+          description: Street and house number, e.g. Hohe Straße 12. Optional
+          maxLength: 200
+        postal_code:
+          type: string
+          description: Postal code, e.g. 50667. Optional
+          maxLength: 16
+        price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Price per one night in the chosen currency, e.g. 89.50
+        rooms:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Number of rooms, from 1 to 50
+        property_type:
+          allOf:
+          - $ref: '#/components/schemas/PropertyTypeEnum'
+          description: |-
+            apartment, house, studio or room
+
+            * `apartment` - Apartment
+            * `house` - House
+            * `studio` - Studio
+            * `room` - Room
+        is_active:
+          type: boolean
+          title: Active
+          description: Inactive listings are hidden from search but keep their bookings
+    PatchedReviewCreate:
+      type: object
+      description: |-
+        RU: Создание отзыва. Объявление и автор берутся из брони, поэтому
+            в запросе их нет.
+        EN: Review creation. The listing and the author are derived from the
+            booking, so they are absent from the request.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+          description: public_id of the completed booking being reviewed
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: Rating from 1 to 5
+        text:
+          type: string
+          description: Free-form review, up to 2000 characters
+          maxLength: 2000
+    PatchedUser:
+      type: object
+      description: |-
+        RU: Публичное представление пользователя.
+        EN: Public representation of a user.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 32
+        groups:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Role groups the user belongs to
+    PhotoReorder:
+      type: object
+      description: |-
+        RU: Новый порядок фото: полный список id в нужной последовательности.
+        EN: New photo order: the complete list of ids in the desired sequence.
+      properties:
+        photo_ids:
+          type: array
+          items:
+            type: integer
+          description: All photo ids of this listing, in the desired display order
+      required:
+      - photo_ids
+    PopularKeyword:
+      type: object
+      description: |-
+        RU: Строка агрегата: ключевое слово и число обращений.
+            Не ModelSerializer — источником служит values().annotate().
+        EN: An aggregate row: keyword and hit count. Not a ModelSerializer,
+            since the source is values().annotate().
+      properties:
+        keyword:
+          type: string
+          description: Normalised search keyword
+        total:
+          type: integer
+          description: How many times it was searched
+      required:
+      - keyword
+      - total
+    PopularListing:
+      type: object
+      description: |-
+        RU: Объявление в рейтинге популярности по числу просмотров.
+        EN: A listing in the popularity ranking by view count.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        views_count:
+          type: integer
+          description: Total de-duplicated views
+      required:
+      - public_id
+      - title
+      - views_count
+    PropertyTypeEnum:
+      enum:
+      - apartment
+      - house
+      - studio
+      - room
+      type: string
+      description: |-
+        * `apartment` - Apartment
+        * `house` - House
+        * `studio` - Studio
+        * `room` - Room
+    Register:
+      type: object
+      description: |-
+        RU: Регистрация. Роль — поле сериализатора, а не модели: источником
+            истины остаются группы Django.
+        EN: Registration. The role is a serializer field, not a model field:
+            Django groups remain the single source of truth.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 32
+        password:
+          type: string
+          writeOnly: true
+          description: At least 8 characters, not entirely numeric
+        password_confirm:
+          type: string
+          writeOnly: true
+          description: Repeat the password exactly
+        group:
+          allOf:
+          - $ref: '#/components/schemas/GroupEnum'
+          writeOnly: true
+          description: |-
+            tenants may book and review, landlords may publish listings
+
+            * `tenants` - tenants
+            * `landlords` - landlords
+      required:
+      - email
+      - group
+      - password
+      - password_confirm
+      - public_id
+    ReviewCreate:
+      type: object
+      description: |-
+        RU: Создание отзыва. Объявление и автор берутся из брони, поэтому
+            в запросе их нет.
+        EN: Review creation. The listing and the author are derived from the
+            booking, so they are absent from the request.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+          description: public_id of the completed booking being reviewed
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: Rating from 1 to 5
+        text:
+          type: string
+          description: Free-form review, up to 2000 characters
+          maxLength: 2000
+      required:
+      - booking
+      - id
+      - rating
+    ReviewRead:
+      type: object
+      description: |-
+        RU: Отзыв в списке объявления.
+        EN: A review as shown on a listing.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        author_email:
+          type: string
+          format: email
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: Rating from 1 to 5
+        text:
+          type: string
+          description: Free-form review, up to 2000 characters
+          maxLength: 2000
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author_email
+      - created_at
+      - id
+      - rating
+    StatusEnum:
+      enum:
+      - pending
+      - confirmed
+      - rejected
+      - cancelled
+      - completed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `confirmed` - Confirmed
+        * `rejected` - Rejected
+        * `cancelled` - Cancelled
+        * `completed` - Completed
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    User:
+      type: object
+      description: |-
+        RU: Публичное представление пользователя.
+        EN: Public representation of a user.
+      properties:
+        public_id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 32
+        groups:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Role groups the user belongs to
+      required:
+      - email
+      - groups
+      - public_id
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

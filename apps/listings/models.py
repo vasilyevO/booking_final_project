@@ -166,16 +166,16 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
         #     (is_active=False) rather than deleted.
         on_delete=models.PROTECT,
         related_name="listings",
-        verbose_name="Владелец",
+        verbose_name=_("Owner"),
     )
     title = models.CharField(
         max_length=200,
-        verbose_name="Заголовок",
-        help_text="Short headline shown in search results, e.g. 'Bright 2-room flat near Rhine'",
+        verbose_name=_("Title"),
+        help_text=_("Short headline shown in search results, e.g. 'Bright 2-room flat near Rhine'"),
     )
     description = models.TextField(
-        verbose_name="Описание",
-        help_text="Full description: layout, furniture, neighbourhood, house rules",
+        verbose_name=_("Description"),
+        help_text=_("Full description: layout, furniture, neighbourhood, house rules"),
     )
     city = models.CharField(
         max_length=100,
@@ -183,33 +183,33 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
         #     левый префикс обслуживает поиск только по городу.
         # EN: db_index dropped — city already leads the composite indexes,
         #     whose leftmost prefix serves city-only lookups.
-        verbose_name="Город",
-        help_text="City as displayed, e.g. Köln",
+        verbose_name=_("City"),
+        help_text=_("City as displayed, e.g. Köln"),
     )
     city_normalized = models.CharField(
         max_length=100,
         editable=False,
         db_index=True,
-        verbose_name="Город (поиск)",
-        help_text="Folded lowercase form used for search: Köln, Koeln and koln all become koeln",
+        verbose_name=_("City (search)"),
+        help_text=_("Folded lowercase form used for search: Köln, Koeln and koln all become koeln"),
     )
     district = models.CharField(
         max_length=100,
         blank=True,
-        verbose_name="Район",
-        help_text="District or quarter, optional",
+        verbose_name=_("District"),
+        help_text=_("District or quarter, optional"),
     )
     address = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="Адрес",
-        help_text="Street and house number, e.g. Hohe Straße 12. Optional",
+        verbose_name=_("Address"),
+        help_text=_("Street and house number, e.g. Hohe Straße 12. Optional"),
     )
     postal_code = models.CharField(
         max_length=16,
         blank=True,
-        verbose_name="Индекс",
-        help_text="Postal code, e.g. 50667. Optional",
+        verbose_name=_("Postal code"),
+        help_text=_("Postal code, e.g. 50667. Optional"),
     )
     # RU: MoneyField — это ДВЕ колонки: price_per_night (decimal) и
     #     price_per_night_currency (varchar(3)). В Python — один Money.
@@ -254,19 +254,19 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
     )
     rooms = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(50)],
-        verbose_name="Комнат",
-        help_text="Number of rooms, from 1 to 50",
+        verbose_name=_("Rooms"),
+        help_text=_("Number of rooms, from 1 to 50"),
     )
     property_type = models.CharField(
         max_length=16,
         choices=PropertyType.choices,
-        verbose_name="Тип жилья",
-        help_text="apartment, house, studio or room",
+        verbose_name=_("Property type"),
+        help_text=_("apartment, house, studio or room"),
     )
     is_active = models.BooleanField(
         default=True,
-        verbose_name="Активно",
-        help_text="Inactive listings are hidden from search but keep their bookings",
+        verbose_name=_("Active"),
+        help_text=_("Inactive listings are hidden from search but keep their bookings"),
     )
 
     objects = ListingManager()
@@ -286,8 +286,8 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
     history = HistoricalRecords()
 
     class Meta:
-        verbose_name = "Объявление"
-        verbose_name_plural = "Объявления"
+        verbose_name = _("Listing")
+        verbose_name_plural = _("Listings")
         # RU: -id как tie-breaker — иначе пагинация нестабильна.
         # EN: -id as a tie-breaker — otherwise pagination is unstable.
         ordering = ("-created_at", "-id")
@@ -415,24 +415,24 @@ class ListingPhoto(TimeStampedModel):
     )
     image = models.ImageField(
         upload_to=listing_photo_path,
-        verbose_name="Фото",
-        help_text="JPEG or PNG, at least 800x600 px",
+        verbose_name=_("Photo"),
+        help_text=_("JPEG or PNG, at least 800x600 px"),
     )
     caption = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="Подпись",
-        help_text="Optional caption, e.g. 'Living room'",
+        verbose_name=_("Caption"),
+        help_text=_("Optional caption, e.g. 'Living room'"),
     )
     position = models.PositiveSmallIntegerField(
         default=0,
-        verbose_name="Позиция",
-        help_text="Display order, ascending. The lowest value is the cover photo",
+        verbose_name=_("Position"),
+        help_text=_("Display order, ascending. The lowest value is the cover photo"),
     )
 
     class Meta:
-        verbose_name = "Фото объявления"
-        verbose_name_plural = "Фото объявлений"
+        verbose_name = _("Listing photo")
+        verbose_name_plural = _("Listing photos")
         # RU: id как tie-breaker при равных позициях — порядок детерминирован
         # EN: id as a tie-breaker for equal positions — deterministic ordering
         ordering = ("position", "id")

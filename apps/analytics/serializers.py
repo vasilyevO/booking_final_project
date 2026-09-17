@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 
 
 class PopularKeywordSerializer(serializers.Serializer):
@@ -11,8 +12,8 @@ class PopularKeywordSerializer(serializers.Serializer):
         since the source is values().annotate().
     """
 
-    keyword = serializers.CharField(help_text="Normalised search keyword")
-    total = serializers.IntegerField(help_text="How many times it was searched")
+    keyword = serializers.CharField(help_text=_("Normalised search keyword"))
+    total = serializers.IntegerField(help_text=_("How many times it was searched"))
 
 
 class PopularListingSerializer(serializers.Serializer):
@@ -23,4 +24,4 @@ class PopularListingSerializer(serializers.Serializer):
 
     public_id = serializers.UUIDField()
     title = serializers.CharField()
-    views_count = serializers.IntegerField(help_text="Total de-duplicated views")
+    views_count = serializers.IntegerField(help_text=_("Total de-duplicated views"))

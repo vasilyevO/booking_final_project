@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.bookings.models import Booking
 from .models import Review
+from django.utils.translation import gettext_lazy as _
 
 
 class ReviewReadSerializer(serializers.ModelSerializer):
@@ -30,7 +31,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
     booking = serializers.SlugRelatedField(
         slug_field="public_id",
         queryset=Booking.objects.all(),
-        help_text="public_id of the completed booking being reviewed",
+        help_text=_("public_id of the completed booking being reviewed"),
     )
 
     class Meta:
@@ -46,9 +47,9 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             belongs here and not in Review.clean().
         """
         if booking.tenant_id != self.context["request"].user.pk:
-            raise serializers.ValidationError("You can only review your own stay")
+            raise serializers.ValidationError(_("You can only review your own stay"))
         if hasattr(booking, "review"):
-            raise serializers.ValidationError("This booking already has a review")
+            raise serializers.ValidationError(_("This booking already has a review"))
         return booking
 
     # RU: «бронь завершена» и «проживание закончилось» проверяет Review.clean()

@@ -11,9 +11,11 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
+import logging.config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -46,7 +48,16 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = env_bool("DEBUG", False)
 
+# RU: за nginx Django видит только его соединение. Без доверия заголовку
+#     X-Forwarded-Proto он под HTTPS строит ссылки с http://, и CSRF-проверка
+#     на POST-формы из админки начинает отклонять запросы.
+# EN: behind nginx Django sees only its connection. Without trusting the
+#     X-Forwarded-Proto header it builds http:// links under HTTPS, and the
+#     CSRF check starts rejecting POST forms from the admin.
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
+
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://localhost")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -81,6 +92,7 @@ INSTALLED_APPS = [
     "apps.bookings",
     "apps.reviews",
     "apps.analytics",
+    "core",
 ]
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = "en"
@@ -116,8 +128,9 @@ AUTH_USER_MODEL = "users.User"      # до первой миграции!
 
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "core.middleware.RequestLogMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -125,6 +138,7 @@ MIDDLEWARE = [
     "simple_history.middleware.HistoryRequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.QueryCountMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -291,4 +305,100 @@ REVIEW_EDIT_WINDOW_DAYS = int(os.getenv("REVIEW_EDIT_WINDOW_DAYS", "14"))
 
 # RU: EMAIL_BACKEND — строка с путём к классу, а не словарь, как DATABASES.
 # EN: EMAIL_BACKEND is a dotted path string, not a dict like DATABASES.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@booking.local")
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
+
+# RU: в тестах письма складываются в mail.outbox, а не печатаются
+# EN: in tests, emails go into mail.outbox instead of being printed
+if "test" in sys.argv:
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+LOG_DIR = BASE_DIR / "logs"
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+# RU: в контейнере пишем только в stdout: файлы внутри контейнера исчезают
+#     вместе с ним, а сбором занимается платформа (Docker, потом CloudWatch).
+# EN: inside a container log to stdout only: files vanish with the container,
+#     and collection is the platform's job (Docker, later CloudWatch).
+LOG_TO_FILE = env_bool("LOG_TO_FILE", not env_bool("IN_CONTAINER", False))
+# RU: SQL пишется ТОЛЬКО при DEBUG=True — Django оборачивает курсор
+#     в отладочный лишь в этом режиме.
+# EN: SQL is emitted ONLY with DEBUG=True — Django wraps the cursor into the
+#     debug one in that mode alone.
+LOG_SQL = env_bool("LOG_SQL", False)
+QUERY_COUNT_WARNING = int(os.getenv("QUERY_COUNT_WARNING", "20"))
+
+if LOG_TO_FILE:
+    LOG_DIR.mkdir(exist_ok=True)
+
+_handlers = ["console"] + (["file"] if LOG_TO_FILE else [])
+
+LOGGING = {
+    "version": 1,
+    # RU: КРИТИЧНО. True отключил бы собственные логгеры Django и сторонних
+    #     библиотек — пропали бы сообщения runserver и трейсбеки.
+    # EN: CRITICAL. True would disable Django's own loggers and those of third
+    #     party packages — runserver messages and tracebacks would disappear.
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {"()": "core.logging_context.RequestIdFilter"},
+    },
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname:<7} [{request_id}] {name}: {message}",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            # RU: фильтр на обработчике, а не на логгере — см. RequestIdFilter
+            # EN: the filter sits on the handler, not the logger — see RequestIdFilter
+            "filters": ["request_id"],
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "app.log"),
+            # RU: ротация обязательна, иначе файл однажды забьёт диск
+            # EN: rotation is mandatory, otherwise the file eventually fills the disk
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "encoding": "utf-8",
+            "formatter": "verbose",
+            "filters": ["request_id"],
+        },
+    },
+    "root": {"handlers": _handlers, "level": "WARNING"},
+    "loggers": {
+        "django": {
+            "handlers": _handlers,
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": _handlers,
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # RU: 4xx и 5xx с трейсбеками
+        # EN: 4xx and 5xx with tracebacks
+        "django.request": {
+            "handlers": _handlers,
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "DEBUG" if (DEBUG and LOG_SQL) else "WARNING",
+            "propagate": False,
+        },
+        # RU: наши приложения: apps.* и core.*
+        # EN: our own applications: apps.* and core.*
+        "apps": {"handlers": _handlers, "level": LOG_LEVEL, "propagate": False},
+        "core": {"handlers": _handlers, "level": LOG_LEVEL, "propagate": False},
+    },
+}

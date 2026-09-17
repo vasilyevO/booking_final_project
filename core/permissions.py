@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from rest_framework import permissions
+from django.utils.translation import gettext_lazy as _
 
 
 class ReadOnlyOrModelPermission(permissions.DjangoModelPermissions):
@@ -34,7 +35,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     """
 
     owner_field = "owner"
-    message = "Изменять можно только собственные объекты."
+    message = _("You may only modify your own objects.")
 
     def has_object_permission(self, request, view, obj) -> bool:
         if request.method in permissions.SAFE_METHODS:
@@ -52,7 +53,7 @@ class IsBookingParticipant(permissions.BasePermission):
         property owner. Staff see everything.
     """
 
-    message = "Бронирование доступно только его участникам."
+    message = _("A booking is only available to its participants.")
 
     def has_object_permission(self, request, view, obj) -> bool:
         user = request.user
@@ -67,7 +68,7 @@ class IsListingOwner(permissions.BasePermission):
     EN: Only the property owner may confirm or reject a booking.
     """
 
-    message = "Только владелец жилья может подтвердить или отклонить бронь."
+    message = _("Only the property owner may confirm or reject a booking.")
 
     def has_object_permission(self, request, view, obj) -> bool:
         return request.user.is_staff or obj.listing.owner_id == request.user.pk
@@ -83,7 +84,7 @@ class IsReviewAuthor(permissions.BasePermission):
         the author to remove it.
     """
 
-    message = "Отзыв можно править только автору и только в течение 14 дней."
+    message = _("A review may only be edited by its author, within 14 days.")
 
     def has_object_permission(self, request, view, obj) -> bool:
         if request.method in permissions.SAFE_METHODS:

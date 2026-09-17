@@ -1,0 +1,524 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: booking_final_project 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-16 13:12+0200\n"
+"PO-Revision-Date: 2026-09-16 13:00+0200\n"
+"Last-Translator: Oleg Vasilyev\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "A booking cannot start in the past."
+msgstr "Eine Buchung kann nicht in der Vergangenheit beginnen."
+
+msgid "These dates are already booked."
+msgstr "Diese Daten sind bereits gebucht."
+
+#, python-format
+msgid "Transition %(old)s to %(new)s is not allowed."
+msgstr "Der Übergang von %(old)s zu %(new)s ist nicht zulässig."
+
+msgid "A booking cannot be completed before the check-out date."
+msgstr "Eine Buchung kann nicht vor dem Abreisedatum abgeschlossen werden."
+
+msgid "The check-out date must be later than the check-in date."
+msgstr "Das Abreisedatum muss nach dem Anreisedatum liegen."
+
+msgid "There must be at least one guest."
+msgstr "Es muss mindestens ein Gast angegeben werden."
+
+msgid "The number of guests must be a whole number."
+msgstr "Die Anzahl der Gäste muss eine ganze Zahl sein."
+
+msgid "Please specify the number of guests."
+msgstr "Bitte geben Sie die Anzahl der Gäste an."
+
+msgid "The total amount cannot be negative."
+msgstr "Der Gesamtbetrag darf nicht negativ sein."
+
+msgid "The price per night must be positive."
+msgstr "Der Preis pro Nacht muss positiv sein."
+
+msgid "Invalid booking status."
+msgstr "Ungültiger Buchungsstatus."
+
+msgid "The discount cannot exceed 100 percent."
+msgstr "Der Rabatt darf 100 Prozent nicht überschreiten."
+
+msgid "The free cancellation deadline has passed."
+msgstr "Die Frist für die kostenlose Stornierung ist abgelaufen."
+
+msgid "Only a pending booking can be edited."
+msgstr "Nur eine offene Buchung kann bearbeitet werden."
+
+msgid "Use PATCH to edit a booking."
+msgstr "Verwenden Sie PATCH, um eine Buchung zu bearbeiten."
+
+msgid "Price must be greater than zero."
+msgstr "Der Preis muss größer als null sein."
+
+msgid "Unsupported currency."
+msgstr "Nicht unterstützte Währung."
+
+msgid "A listing must have at least one room."
+msgstr "Ein Inserat muss mindestens ein Zimmer haben."
+
+msgid "Unknown property type."
+msgstr "Unbekannte Unterkunftsart."
+
+msgid "Photo list does not match the listing"
+msgstr "Die Fotoliste passt nicht zum Inserat"
+
+msgid "You cannot book your own property."
+msgstr "Sie können Ihre eigene Unterkunft nicht buchen."
+
+msgid "You may only modify your own objects."
+msgstr "Sie dürfen nur Ihre eigenen Objekte ändern."
+
+msgid "A booking is only available to its participants."
+msgstr "Eine Buchung ist nur für ihre Beteiligten zugänglich."
+
+msgid "Only the property owner may confirm or reject a booking."
+msgstr ""
+"Nur der Eigentümer der Unterkunft darf eine Buchung bestätigen oder ablehnen."
+
+msgid "A review may only be edited by its author, within 14 days."
+msgstr ""
+"Eine Bewertung darf nur von ihrem Verfasser und nur innerhalb von 14 Tagen "
+"bearbeitet werden."
+
+msgid "Only the tenant may edit this booking."
+msgstr "Nur der Mieter kann diese Buchung bearbeiten."
+
+msgid "A review can only be left after the stay is completed."
+msgstr ""
+"Eine Bewertung kann erst nach Abschluss des Aufenthalts abgegeben werden."
+
+msgid "The stay has not ended yet."
+msgstr "Der Aufenthalt ist noch nicht beendet."
+
+msgid "You can only review your own stay"
+msgstr "Sie können nur Ihren eigenen Aufenthalt bewerten"
+
+msgid "This booking already has a review"
+msgstr "Für diese Buchung gibt es bereits eine Bewertung"
+
+msgid "Passwords do not match"
+msgstr "Die Passwörter stimmen nicht überein"
+
+msgid "Pending"
+msgstr "Ausstehend"
+
+msgid "Confirmed"
+msgstr "Bestätigt"
+
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+msgid "Cancelled"
+msgstr "Storniert"
+
+msgid "Completed"
+msgstr "Abgeschlossen"
+
+msgid "Apartment"
+msgstr "Wohnung"
+
+msgid "House"
+msgstr "Haus"
+
+msgid "Studio"
+msgstr "Studio"
+
+msgid "Room"
+msgstr "Zimmer"
+
+msgid "Listing"
+msgstr "Inserat"
+
+msgid "Listings"
+msgstr "Inserate"
+
+msgid "Listing photo"
+msgstr "Inseratsfoto"
+
+msgid "Listing photos"
+msgstr "Inseratsfotos"
+
+msgid "Booking"
+msgstr "Buchung"
+
+msgid "Bookings"
+msgstr "Buchungen"
+
+msgid "Review"
+msgstr "Bewertung"
+
+msgid "Reviews"
+msgstr "Bewertungen"
+
+msgid "User"
+msgstr "Benutzer"
+
+msgid "Users"
+msgstr "Benutzer"
+
+msgid "Search query"
+msgstr "Suchanfrage"
+
+msgid "Search history"
+msgstr "Suchverlauf"
+
+msgid "Listing view"
+msgstr "Inseratsaufruf"
+
+msgid "View history"
+msgstr "Aufrufverlauf"
+
+msgid "Listing statistics"
+msgstr "Inseratsstatistik"
+
+msgid "Owner"
+msgstr "Eigentümer"
+
+msgid "Title"
+msgstr "Titel"
+
+msgid "Description"
+msgstr "Beschreibung"
+
+msgid "City"
+msgstr "Stadt"
+
+msgid "City (search)"
+msgstr "Stadt (Suche)"
+
+msgid "District"
+msgstr "Stadtteil"
+
+msgid "Address"
+msgstr "Adresse"
+
+msgid "Postal code"
+msgstr "Postleitzahl"
+
+msgid "Rooms"
+msgstr "Zimmer"
+
+msgid "Property type"
+msgstr "Unterkunftsart"
+
+msgid "Active"
+msgstr "Aktiv"
+
+msgid "Price per night"
+msgstr "Preis pro Nacht"
+
+msgid "Price in base currency"
+msgstr "Preis in Basiswährung"
+
+msgid "Photo"
+msgstr "Foto"
+
+msgid "Caption"
+msgstr "Bildunterschrift"
+
+msgid "Position"
+msgstr "Position"
+
+msgid "Check-in"
+msgstr "Anreise"
+
+msgid "Check-out"
+msgstr "Abreise"
+
+msgid "Guests"
+msgstr "Gäste"
+
+msgid "Guest"
+msgstr "Gast"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Discount, %"
+msgstr "Rabatt, %"
+
+msgid "Total"
+msgstr "Gesamt"
+
+msgid "Exchange rate at booking time"
+msgstr "Wechselkurs zum Zeitpunkt der Buchung"
+
+msgid "Total in base currency"
+msgstr "Gesamt in Basiswährung"
+
+msgid "Rating"
+msgstr "Bewertung"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "email"
+msgstr "E-Mail"
+
+msgid "Views"
+msgstr "Aufrufe"
+
+msgid "English"
+msgstr "Englisch"
+
+msgid "German"
+msgstr "Deutsch"
+
+msgid "Russian"
+msgstr "Russisch"
+
+# --- темы писем ---
+msgid "Your booking request has been created"
+msgstr "Ihre Buchungsanfrage wurde erstellt"
+
+msgid "New booking request for your property"
+msgstr "Neue Buchungsanfrage für Ihre Unterkunft"
+
+msgid "Your booking has been confirmed"
+msgstr "Ihre Buchung wurde bestätigt"
+
+msgid "Your booking has been rejected"
+msgstr "Ihre Buchung wurde abgelehnt"
+
+msgid "Your booking has been cancelled"
+msgstr "Ihre Buchung wurde storniert"
+
+msgid "Your stay is complete — leave a review"
+msgstr "Ihr Aufenthalt ist beendet — hinterlassen Sie eine Bewertung"
+
+# --- тела писем (blocktranslate) ---
+#, python-format
+msgid "Your booking request for \"%(title)s\" has been created."
+msgstr "Ihre Buchungsanfrage für „%(title)s“ wurde erstellt."
+
+#, python-format
+msgid "New booking request for \"%(title)s\"."
+msgstr "Neue Buchungsanfrage für „%(title)s“."
+
+#, python-format
+msgid "Your booking for \"%(title)s\" is now: %(status)s."
+msgstr "Ihre Buchung für „%(title)s“ hat jetzt den Status: %(status)s."
+
+msgid "The owner will confirm or reject your request."
+msgstr "Der Eigentümer wird Ihre Anfrage bestätigen oder ablehnen."
+
+msgid "City, any spelling"
+msgstr "Stadt, beliebige Schreibweise"
+
+msgid "Minimum price, EUR"
+msgstr "Mindestpreis, EUR"
+
+msgid "Maximum price, EUR"
+msgstr "Höchstpreis, EUR"
+
+msgid "Search and filter listings"
+msgstr "Inserate suchen und filtern"
+
+msgid "Listing details"
+msgstr "Inseratsdetails"
+
+msgid "Create a listing"
+msgstr "Inserat erstellen"
+
+msgid "Update a listing"
+msgstr "Inserat aktualisieren"
+
+msgid "Replace a listing"
+msgstr "Inserat vollständig ersetzen"
+
+msgid "Soft-delete a listing"
+msgstr "Inserat als gelöscht markieren"
+
+msgid "Upload a photo"
+msgstr "Foto hochladen"
+
+msgid "Reorder photos"
+msgstr "Fotos neu anordnen"
+
+msgid "Reviews of this listing"
+msgstr "Bewertungen dieses Inserats"
+
+msgid "My bookings, as a tenant or as a landlord"
+msgstr "Meine Buchungen – als Mieter oder als Vermieter"
+
+msgid "Create a booking"
+msgstr "Buchung erstellen"
+
+msgid "Change dates or guest count of a pending booking"
+msgstr "Zeitraum oder Gästezahl einer offenen Buchung ändern"
+
+msgid "Confirm a booking (landlord only)"
+msgstr "Buchung bestätigen (nur Vermieter)"
+
+msgid "Reject a booking (landlord only)"
+msgstr "Buchung ablehnen (nur Vermieter)"
+
+msgid "Cancel a booking (tenant or landlord)"
+msgstr "Buchung stornieren (Mieter oder Vermieter)"
+
+msgid "Register a new account"
+msgstr "Neues Konto registrieren"
+
+msgid "Current user profile"
+msgstr "Profil des aktuellen Benutzers"
+
+msgid "Most searched keywords"
+msgstr "Meistgesuchte Suchbegriffe"
+
+msgid "Most viewed listings"
+msgstr "Meistaufgerufene Inserate"
+
+msgid ""
+"Short headline shown in search results, e.g. 'Bright 2-room flat near Rhine'"
+msgstr ""
+"Kurze Überschrift für die Suchergebnisse, z. B. „Helle 2-Zimmer-Wohnung am "
+"Rhein“"
+
+msgid "Full description: layout, furniture, neighbourhood, house rules"
+msgstr ""
+"Vollständige Beschreibung: Grundriss, Möblierung, Umgebung, Hausordnung"
+
+msgid "City as displayed, e.g. Köln"
+msgstr "Stadt wie angezeigt, z. B. Köln"
+
+msgid ""
+"Folded lowercase form used for search: Köln, Koeln and koln all become koeln"
+msgstr ""
+"Vereinheitlichte Kleinschreibung für die Suche: Köln, Koeln und koln werden "
+"zu koeln"
+
+msgid "District or quarter, optional"
+msgstr "Stadtteil oder Viertel, optional"
+
+msgid "Street and house number, e.g. Hohe Straße 12. Optional"
+msgstr "Straße und Hausnummer, z. B. Hohe Straße 12. Optional"
+
+msgid "Postal code, e.g. 50667. Optional"
+msgstr "Postleitzahl, z. B. 50667. Optional"
+
+msgid "Price per one night in the chosen currency, e.g. 89.50"
+msgstr "Preis für eine Nacht in der gewählten Währung, z. B. 89.50"
+
+msgid "Computed automatically, used for filtering and sorting"
+msgstr "Wird automatisch berechnet und zum Filtern und Sortieren verwendet"
+
+msgid "Number of rooms, from 1 to 50"
+msgstr "Anzahl der Zimmer, von 1 bis 50"
+
+msgid "apartment, house, studio or room"
+msgstr "Wohnung, Haus, Studio oder Zimmer"
+
+msgid "Inactive listings are hidden from search but keep their bookings"
+msgstr ""
+"Inaktive Inserate sind in der Suche ausgeblendet, ihre Buchungen bleiben "
+"erhalten"
+
+msgid "JPEG or PNG, at least 800x600 px"
+msgstr "JPEG oder PNG, mindestens 800x600 px"
+
+msgid "Optional caption, e.g. 'Living room'"
+msgstr "Optionale Bildunterschrift, z. B. „Wohnzimmer“"
+
+msgid "Display order, ascending. The lowest value is the cover photo"
+msgstr "Anzeigereihenfolge, aufsteigend. Der niedrigste Wert ist das Titelbild"
+
+msgid "Check-in date, inclusive. Format YYYY-MM-DD"
+msgstr "Anreisedatum, einschließlich. Format JJJJ-MM-TT"
+
+msgid "Check-out date, exclusive: this night is not charged"
+msgstr "Abreisedatum, ausschließlich: diese Nacht wird nicht berechnet"
+
+msgid "Number of guests, from 1 to 20"
+msgstr "Anzahl der Gäste, von 1 bis 20"
+
+msgid "Number of guests, at least 1"
+msgstr "Anzahl der Gäste, mindestens 1"
+
+msgid "Lifecycle status. Changed only through the booking actions"
+msgstr "Lebenszyklus-Status. Wird nur über die Buchungsaktionen geändert"
+
+msgid "Discount applied at booking time, 0 to 100 percent"
+msgstr "Rabatt zum Zeitpunkt der Buchung, 0 bis 100 Prozent"
+
+msgid "Agreed contract amount, frozen at booking time"
+msgstr "Vereinbarter Vertragsbetrag, zum Zeitpunkt der Buchung festgeschrieben"
+
+msgid "public_id of the listing to book"
+msgstr "public_id des zu buchenden Inserats"
+
+msgid "Target status. Allowed transitions are defined by the state machine"
+msgstr ""
+"Zielstatus. Zulässige Übergänge werden durch den Zustandsautomaten festgelegt"
+
+msgid "Rating from 1 to 5"
+msgstr "Bewertung von 1 bis 5"
+
+msgid "Free-form review, up to 2000 characters"
+msgstr "Freitext-Bewertung, bis zu 2000 Zeichen"
+
+msgid "public_id of the completed booking being reviewed"
+msgstr "public_id der abgeschlossenen Buchung, die bewertet wird"
+
+msgid "All photo ids of this listing, in the desired display order"
+msgstr "Alle Foto-IDs dieses Inserats in der gewünschten Anzeigereihenfolge"
+
+msgid "Language used for emails and notifications"
+msgstr "Sprache für E-Mails und Benachrichtigungen"
+
+msgid "Role groups the user belongs to"
+msgstr "Rollengruppen, denen der Benutzer angehört"
+
+msgid "At least 8 characters, not entirely numeric"
+msgstr "Mindestens 8 Zeichen, nicht nur Ziffern"
+
+msgid "Repeat the password exactly"
+msgstr "Passwort exakt wiederholen"
+
+msgid "tenants may book and review, landlords may publish listings"
+msgstr ""
+"tenants dürfen buchen und bewerten, landlords dürfen Inserate veröffentlichen"
+
+msgid "De-duplicated views, one per user per day"
+msgstr "Aufrufe ohne Duplikate: einer pro Nutzer pro Tag"
+
+msgid "Normalised search keyword"
+msgstr "Normalisierter Suchbegriff"
+
+msgid "How many times it was searched"
+msgstr "Wie oft danach gesucht wurde"
+
+msgid "Total de-duplicated views"
+msgstr "Aufrufe ohne Duplikate insgesamt"
+
+msgid "Free-text search in title and description"
+msgstr "Freitextsuche in Titel und Beschreibung"
+
+msgid "City in any spelling: Köln, Koeln, koln"
+msgstr "Stadt in beliebiger Schreibweise: Köln, Koeln, koln"
+
+msgid "Minimum price per night, EUR"
+msgstr "Mindestpreis pro Nacht, EUR"
+
+msgid "Maximum price per night, EUR"
+msgstr "Höchstpreis pro Nacht, EUR"
+
+#, python-format
+msgid "Sort order. Available fields: %(fields)s"
+msgstr "Sortierreihenfolge. Verfügbare Felder: %(fields)s"

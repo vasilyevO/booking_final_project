@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from core.models import PublicIdModel, TimeStampedModel
+from django.conf import settings
 
 
 class UserManager(BaseUserManager):
@@ -64,7 +65,15 @@ class User(AbstractUser, TimeStampedModel, PublicIdModel):
     email = models.EmailField(_("email"), unique=True)
     # RU: для строковых полей используем blank="" вместо null.
     # EN: for string fields prefer blank="" over null.
-    phone = models.CharField(max_length=32, blank=True)
+    phone = models.CharField(_("Phone"), max_length=32, blank=True)
+
+    language = models.CharField(
+        max_length=5,
+        choices=settings.LANGUAGES,
+        default=settings.LANGUAGE_CODE,
+        verbose_name=_("Language"),
+        help_text=_("Language used for emails and notifications"),
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
@@ -72,8 +81,8 @@ class User(AbstractUser, TimeStampedModel, PublicIdModel):
     objects = UserManager()
 
     class Meta:
-        verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
+        verbose_name = _("User")
+        verbose_name_plural = _("Users")
         ordering = ("-date_joined",)
 
     def __str__(self) -> str:

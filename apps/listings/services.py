@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils.translation import gettext_lazy as _
 
 from .models import ListingPhoto
 
@@ -18,7 +19,7 @@ def reorder_photos(*, listing, photo_ids: list[int]) -> None:
     """
     photos = {p.pk: p for p in listing.photos.select_for_update()}
     if set(photos) != set(photo_ids):
-        raise ValidationError("Photo list does not match the listing")
+        raise ValidationError(_("Photo list does not match the listing"))
 
     for index, photo_id in enumerate(photo_ids, start=1):
         photos[photo_id].position = index * POSITION_STEP

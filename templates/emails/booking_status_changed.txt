@@ -1,0 +1,6 @@
+{% load i18n %}{% blocktranslate with title=booking.listing_title_snapshot status=booking.get_status_display %}Your booking for "{{ title }}" is now: {{ status }}.{% endblocktranslate %}
+
+{% translate "Check-in" %}: {{ booking.start_date }}
+{% translate "Check-out" %}: {{ booking.end_date }}
+
+{{ url }}
