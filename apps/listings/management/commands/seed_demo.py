@@ -5,12 +5,14 @@ EN: Populates the database with demo data using Faker.
 
     python manage.py seed_demo --flush
     python manage.py seed_demo --landlords 8 --tenants 25 --listings 40 --seed 42
+    python manage.py seed_demo --languages de,ru
 """
 from __future__ import annotations
 
 import io
 import random
 from datetime import datetime, time, timedelta
+from itertools import cycle
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
@@ -158,6 +160,17 @@ class Command(BaseCommand):
             "--no-photos", action="store_true",
             help="Skip image generation (faster, writes no files to MEDIA_ROOT)",
         )
+        # RU: языки демо-пользователей задаются параметром, чтобы не править
+        #     профили в shell после каждого пересоздания базы. Письма о брони
+        #     уходят на языке получателя, и разные языки видно сразу.
+        # EN: demo users' languages come from an argument, so profiles need no
+        #     manual fixing in the shell after every database recreation.
+        #     Booking emails go out in the recipient's language, so the
+        #     difference is visible immediately.
+        parser.add_argument(
+            "--languages", default="en,de,ru",
+            help="Comma-separated language codes spread round-robin across demo users",
+        )
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
@@ -166,6 +179,8 @@ class Command(BaseCommand):
         self.rng = random.Random(options["seed"])
         self.fake = Faker("de_DE")
         Faker.seed(options["seed"])
+
+        self.language_cycle = self._language_cycle(options["languages"])
 
         if options["flush"]:
             self._flush()
@@ -193,6 +208,43 @@ class Command(BaseCommand):
         views = self._create_analytics(listings, tenants)
 
         self._report(landlords, tenants, listings, bookings, reviews, views)
+
+    # -------------------------------------------------------------- languages
+
+    def _language_cycle(self, raw: str):
+        """
+        RU: Проверяет коды по settings.LANGUAGES и возвращает бесконечный
+            итератор. Проверка нужна потому, что User.language объявлен с
+            choices, а они срабатывают только в full_clean(); get_or_create
+            его не вызывает, и опечатка вроде "du" записалась бы молча,
+            а упала бы позже — внутри override() при отправке письма.
+        EN: Validates the codes against settings.LANGUAGES and returns an
+            endless iterator. The check matters because User.language declares
+            choices, and those only apply in full_clean(); get_or_create never
+            calls it, so a typo such as "du" would be stored silently and fail
+            later — inside override() when an email is sent.
+        """
+        codes = [code.strip() for code in raw.split(",") if code.strip()]
+        if not codes:
+            raise CommandError("--languages must list at least one code")
+
+        known = {code for code, _name in settings.LANGUAGES}
+        unknown = sorted(set(codes) - known)
+        if unknown:
+            raise CommandError(
+                f"Unknown language codes: {', '.join(unknown)}. "
+                f"Available: {', '.join(sorted(known))}"
+            )
+
+        # RU: cycle раздаёт языки по кругу: landlord1 -> en, landlord2 -> de,
+        #     landlord3 -> ru, landlord4 -> en. Арендаторы продолжают ту же
+        #     последовательность, поэтому стороны брони почти всегда
+        #     оказываются на разных языках.
+        # EN: cycle hands out languages round-robin: landlord1 -> en,
+        #     landlord2 -> de, landlord3 -> ru, landlord4 -> en. Tenants
+        #     continue the same sequence, so the two parties of a booking
+        #     almost always end up in different languages.
+        return cycle(codes)
 
     # ------------------------------------------------------------------ flush
 
@@ -245,17 +297,28 @@ class Command(BaseCommand):
             # EN: the index guarantees uniqueness — faker repeats names while
             #     the model declares email unique.
             email = f"{group_name[:-1]}{index + 1}@{DEMO_DOMAIN}"
+            language = next(self.language_cycle)
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
                     "first_name": self.fake.first_name(),
                     "last_name": self.fake.last_name(),
                     "phone": self.fake.numerify("+49 1## #######"),
+                    "language": language,
                 },
             )
             if created:
                 user.set_password(DEMO_PASSWORD)
                 user.save(update_fields=["password"])
+            else:
+                # RU: get_or_create не трогает существующие строки, поэтому
+                #     язык обновляем явно — иначе повторный запуск с другим
+                #     --languages ничего бы не изменил.
+                # EN: get_or_create leaves existing rows untouched, so the
+                #     language is updated explicitly — otherwise a rerun with a
+                #     different --languages would change nothing.
+                user.language = language
+                user.save(update_fields=["language"])
             user.groups.add(group)
             users.append(user)
 
@@ -634,3 +697,15 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"  reviews   : {reviews}")
         self.stdout.write(f"  views     : {views}")
+
+        # RU: раскладка по языкам — сразу видно, на ком проверять письма
+        # EN: the language breakdown shows at a glance whom to test emails with
+        by_language: dict[str, list[str]] = {}
+        for user in landlords + tenants:
+            by_language.setdefault(user.language, []).append(user.email)
+        self.stdout.write("  languages :")
+        for code in sorted(by_language):
+            emails = by_language[code]
+            sample = ", ".join(emails[:3])
+            more = f" (+{len(emails) - 3})" if len(emails) > 3 else ""
+            self.stdout.write(f"      {code}: {len(emails)} — {sample}{more}")

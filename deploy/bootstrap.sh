@@ -39,9 +39,9 @@ mkdir -p "$PLUGIN_DIR"
 # EN: the architecture is detected rather than hard-coded: a t3.micro is x86_64
 #     while a Graviton t4g.micro is aarch64, where an amd64 binary will not run.
 ARCH=$(uname -m)
-curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}" \
-     -o "$PLUGIN_DIR/docker-compose"
-chmod +x "$PLUGIN_DIR/docker-compose"
+sudo curl -SL "https://github.com/docker/buildx/releases/download/v0.25.0/buildx-v0.25.0.linux-${BX_ARCH}" \
+     -o "$PLUGIN_DIR/docker-buildx"
+sudo chmod +x "$PLUGIN_DIR/docker-buildx"
 
 systemctl restart docker
 
