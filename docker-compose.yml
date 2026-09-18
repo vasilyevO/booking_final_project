@@ -14,6 +14,8 @@ services:
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
     volumes:
       # RU: именованный том, а не ./db:/var/lib/mysql. Bind mount с
       #     Windows-хоста ломает MySQL правами доступа, и данными управляет
