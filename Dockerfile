@@ -45,29 +45,18 @@ WORKDIR /app
 COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
+# RU: каталоги создаём ДО первой команды manage.py — settings.py может
+#     попытаться открыть файл лога при импорте.
+# EN: create the directories BEFORE the first manage.py command — settings.py
+#     may try to open the log file at import time.
+RUN mkdir -p /app/media /app/logs /app/staticfiles
+
 COPY . .
 
-# RU: compilemessages ОБЯЗАТЕЛЕН на этапе сборки: файлы .mo лежат в
-#     .gitignore, значит в образ они не попадают, и без этой команды вся
-#     локализация в контейнере молча не работает — без единой ошибки.
-# EN: compilemessages is MANDATORY at build time: the .mo files are gitignored,
-#     so they never reach the image, and without this command all localisation
-#     silently fails inside the container — with no error at all.
-RUN python manage.py compilemessages
+RUN SECRET_KEY=build-only DB_NAME=x DB_USER=x DB_PASSWORD=x LOG_TO_FILE=False \
+    sh -c "python manage.py compilemessages && python manage.py collectstatic --noinput"
 
-# RU: collectstatic собирает админку и Swagger UI. При DEBUG=False Django
-#     статику не отдаёт — её будет раздавать nginx из общего тома.
-# EN: collectstatic gathers the admin and Swagger UI assets. With DEBUG=False
-#     Django serves no static files — nginx will serve them from a shared volume.
-RUN SECRET_KEY=build-only DB_NAME=x DB_USER=x DB_PASSWORD=x \
-    python manage.py collectstatic --noinput
-
-# RU: непривилегированный пользователь. Процесс в контейнере под root — это
-#     root на хосте при побеге из контейнера.
-# EN: an unprivileged user. A root process inside the container is root on the
-#     host if the container is escaped.
 RUN useradd --create-home --uid 1000 appuser \
-    && mkdir -p /app/media /app/logs \
     && chown -R appuser:appuser /app
 USER appuser
 

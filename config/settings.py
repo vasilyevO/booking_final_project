@@ -331,7 +331,7 @@ LOG_SQL = env_bool("LOG_SQL", False)
 QUERY_COUNT_WARNING = int(os.getenv("QUERY_COUNT_WARNING", "20"))
 
 if LOG_TO_FILE:
-    LOG_DIR.mkdir(exist_ok=True)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 _handlers = ["console"] + (["file"] if LOG_TO_FILE else [])
 
