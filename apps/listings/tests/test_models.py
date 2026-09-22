@@ -13,7 +13,7 @@ from apps.bookings.models import BookingStatus
 from apps.listings.exchange import StaticExchangeBackend
 from apps.listings.models import Listing, ListingPhoto, ListingQuerySet, listing_photo_path
 from apps.listings.services import POSITION_STEP, reorder_photos
-from core.testing import BaseTestCase, make_booking, make_listing, make_user
+from core.testing import BaseTestCase, FullTextTestCase, make_booking, make_listing, make_user
 
 
 class ListingSaveTests(BaseTestCase):
@@ -100,15 +100,42 @@ class ListingQuerySetTests(BaseTestCase):
         self.assertEqual(Listing.objects.by_owner(self.owner).count(), 2)
         self.assertEqual(Listing.objects.by_owner(make_user()).count(), 0)
 
-    def test_search_title_and_description(self):
-        self.assertEqual(list(Listing.objects.search("river")), [self.river])
-        self.assertEqual(list(Listing.objects.search("garden")), [self.garden])
-
     def test_short_term_uses_substring_match(self):
         self.assertEqual(list(Listing.objects.search("sa")), [self.garden])
 
     def test_blank_search_returns_everything(self):
         self.assertEqual(Listing.objects.search("  ").count(), 2)
+
+    def test_boolean_phrases_neutralise_operators(self):
+        phrases = ListingQuerySet._as_boolean_phrases('++a -b "c" (d*)')
+        self.assertEqual(phrases, '"++a" "-b" "c" "(d*)"')
+        self.assertEqual(ListingQuerySet._as_boolean_phrases('""'), "")
+
+
+class ListingSearchTests(FullTextTestCase):
+    """
+    RU: Поиск через MATCH ... AGAINST. Отдельный класс на
+        TransactionTestCase: в откатываемой транзакции FULLTEXT-индекс
+        InnoDB не наполняется и любой поиск вернул бы пусто.
+    EN: Search through MATCH ... AGAINST. A separate class on
+        TransactionTestCase: inside a rolled-back transaction the InnoDB
+        FULLTEXT index is never filled and every search would return nothing.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.owner = make_user()
+        self.river = make_listing(
+            self.owner, title="Flat near the river", description="Quiet."
+        )
+        self.garden = make_listing(
+            self.owner, title="House", description="Large garden and a sauna.",
+            is_active=False,
+        )
+
+    def test_search_title_and_description(self):
+        self.assertEqual(list(Listing.objects.search("river")), [self.river])
+        self.assertEqual(list(Listing.objects.search("garden")), [self.garden])
 
     def test_search_uses_active_language_columns(self):
         self.river.title_de = "Wohnung am Fluss"
@@ -117,11 +144,6 @@ class ListingQuerySetTests(BaseTestCase):
             self.assertEqual(list(Listing.objects.search("Fluss")), [self.river])
         with translation.override("en"):
             self.assertEqual(list(Listing.objects.search("Fluss")), [])
-
-    def test_boolean_phrases_neutralise_operators(self):
-        phrases = ListingQuerySet._as_boolean_phrases('++a -b "c" (d*)')
-        self.assertEqual(phrases, '"++a" "-b" "c" "(d*)"')
-        self.assertEqual(ListingQuerySet._as_boolean_phrases('""'), "")
 
     @unittest.skipUnless(connection.vendor == "mysql", "FULLTEXT search requires MySQL")
     def test_fulltext_search_survives_operators(self):

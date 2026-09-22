@@ -13,7 +13,8 @@ from apps.analytics.models import ListingStats, SearchQuery
 from apps.bookings.models import BookingStatus
 from apps.listings.models import Listing, ListingPhoto
 from core.testing import (
-    APITestCase, make_booking, make_completed_booking, make_listing, make_review, make_user,
+    APITestCase, FullTextAPITestCase, make_booking, make_completed_booking,
+    make_listing, make_review, make_user,
 )
 
 LIST_URL = "/api/listings/"
@@ -134,15 +135,6 @@ class ListingFilterTests(APITestCase):
     def test_ordering_by_base_price(self):
         self.assertEqual(self.titles(ordering="price_base"), ["Prague", "Cologne", "Munich"])
         self.assertEqual(self.titles(ordering="-price_base"), ["Munich", "Cologne", "Prague"])
-
-    def test_search_filters_and_is_recorded(self):
-        user = make_user()
-        self.login(user)
-        self.assertEqual(self.titles(search="Munich"), ["Munich"])
-        query = SearchQuery.objects.get()
-        self.assertEqual(query.keyword, "munich")
-        self.assertEqual(query.results_count, 1)
-        self.assertEqual(query.user, user)
 
     def test_long_search_term_is_truncated(self):
         self.titles(search="x" * 500)
@@ -291,3 +283,33 @@ class ListingPhotoApiTests(APITestCase):
             detail_url(listing, "photos/reorder/"), {"photo_ids": [999]}, format="json"
         )
         self.assertEqual(response.status_code, 400)
+
+
+class ListingSearchApiTests(FullTextAPITestCase):
+    """
+    RU: Поиск через API. TransactionTestCase нужен по той же причине, что и
+        в ListingSearchTests: FULLTEXT-индекс InnoDB наполняется на коммите.
+    EN: Search through the API. TransactionTestCase is required for the same
+        reason as in ListingSearchTests: the InnoDB FULLTEXT index is filled
+        on commit.
+    """
+
+    def setUp(self):
+        super().setUp()
+        owner = make_user(group="landlords")
+        make_listing(owner, title="Munich", city="München")
+        make_listing(owner, title="Cologne", city="Köln")
+
+    def titles(self, **params):
+        response = self.client.get(LIST_URL, params)
+        self.assertEqual(response.status_code, 200)
+        return [item["title"] for item in response.json()["results"]]
+
+    def test_search_filters_and_is_recorded(self):
+        user = make_user()
+        self.login(user)
+        self.assertEqual(self.titles(search="Munich"), ["Munich"])
+        query = SearchQuery.objects.get()
+        self.assertEqual(query.keyword, "munich")
+        self.assertEqual(query.results_count, 1)
+        self.assertEqual(query.user, user)

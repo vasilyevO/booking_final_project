@@ -14,7 +14,7 @@ from decimal import Decimal
 from django.contrib.auth.models import Group
 from django.core.cache import cache
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 from djmoney.money import Money
 from rest_framework.test import APIClient
@@ -118,6 +118,46 @@ class BaseTestCase(TestCase):
 
 class APITestCase(BaseTestCase):
     """BaseTestCase with a DRF client and authentication helpers."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+    def login(self, user: User | None) -> None:
+        self.client.force_authenticate(user=user)
+
+
+class FullTextTestCase(TransactionTestCase):
+    """
+    RU: База для тестов, которым нужен настоящий COMMIT.
+        InnoDB обновляет FULLTEXT-индекс при коммите транзакции: токены
+        новых строк попадают в кэш индекса только тогда. Обычный TestCase
+        держит каждый тест в транзакции и откатывает её, поэтому
+        MATCH ... AGAINST не видит вставленные строки и возвращает пусто.
+        TransactionTestCase коммитит по-настоящему и чистит таблицы после
+        теста — медленнее, но это единственный способ проверить FULLTEXT.
+    EN: Base for tests that need a real COMMIT.
+        InnoDB updates the FULLTEXT index on transaction commit: tokens of
+        new rows reach the index cache only then. A plain TestCase keeps
+        each test inside a transaction and rolls it back, so
+        MATCH ... AGAINST cannot see the inserted rows and returns nothing.
+        TransactionTestCase commits for real and truncates the tables
+        afterwards — slower, but the only way to exercise FULLTEXT.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # RU: setUpTestData у TransactionTestCase нет — данные не переживают
+        #     тест, поэтому подготовка идёт в setUp для каждого.
+        # EN: TransactionTestCase has no setUpTestData — data does not survive
+        #     a test, so the setup runs in setUp for every one of them.
+        call_command("init_groups", stdout=StringIO())
+        call_command("update_rates", stdout=StringIO())
+        cache.clear()
+
+
+class FullTextAPITestCase(FullTextTestCase):
+    """FullTextTestCase with a DRF client."""
 
     def setUp(self):
         super().setUp()
