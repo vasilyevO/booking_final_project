@@ -147,8 +147,28 @@ class ListingSearchTests(FullTextTestCase):
 
     @unittest.skipUnless(connection.vendor == "mysql", "FULLTEXT search requires MySQL")
     def test_fulltext_search_survives_operators(self):
-        self.assertEqual(list(Listing.objects.search("++river")), [])
+        """
+        RU: Операторы BOOLEAN MODE обезврежены: _as_boolean_phrases берёт
+            каждое слово в кавычки, и внутри фразы парсер MySQL читает
+            символы буквально, а пунктуацию при разборе на токены
+            отбрасывает. Поэтому "++river" не ломает запрос и не меняет
+            его смысл — находится то же, что и по "river".
+        EN: BOOLEAN MODE operators are neutralised: _as_boolean_phrases puts
+            every word in quotes, and inside a phrase the MySQL parser reads
+            the characters literally while dropping punctuation during
+            tokenisation. So "++river" neither breaks the query nor changes
+            its meaning — it finds exactly what "river" finds.
+        """
         self.assertEqual(list(Listing.objects.search("river")), [self.river])
+        self.assertEqual(list(Listing.objects.search("++river")), [self.river])
+        # RU: несбалансированная кавычка тоже не должна ронять запрос
+        # EN: an unbalanced quote must not break the query either
+        self.assertEqual(list(Listing.objects.search('river" -garden')), [self.river])
+        # RU: запрос из одной пунктуации превращается в пустой — и тогда
+        #     search() возвращает none(), а не падает
+        # EN: a punctuation-only term becomes empty — search() then returns
+        #     none() instead of failing
+        self.assertEqual(list(Listing.objects.search('"" ')), [])
 
 
 class ListingPhotoTests(BaseTestCase):
