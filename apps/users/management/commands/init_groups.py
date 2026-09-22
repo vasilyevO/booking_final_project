@@ -4,8 +4,7 @@ from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-# RU: (app_label, model_name, [codename без суффикса модели])
-# EN: (app_label, model_name, [codename prefixes])
+# (app_label, model_name, [codename prefixes])
 GROUP_MATRIX: dict[str, list[tuple[str, str, list[str]]]] = {
     "tenants": [
         ("listings", "listing", ["view"]),
@@ -14,7 +13,7 @@ GROUP_MATRIX: dict[str, list[tuple[str, str, list[str]]]] = {
     ],
     "landlords": [
         ("listings", "listing", ["add", "change", "delete", "view"]),
-        ("bookings", "booking", ["view", "confirm", "reject"]),
+        ("bookings", "booking", ["view", "confirm", "reject", "cancel"]),
         ("reviews", "review", ["view"]),
     ],
 }
@@ -22,10 +21,8 @@ GROUP_MATRIX: dict[str, list[tuple[str, str, list[str]]]] = {
 
 class Command(BaseCommand):
     """
-    RU: Создаёт ролевые группы и раскладывает по ним права.
-        Идемпотентна — можно запускать при каждом развёртывании.
-    EN: Creates role groups and assigns permissions to them.
-        Idempotent — safe to run on every deployment.
+    Creates role groups and assigns permissions to them.
+    Idempotent — safe to run on every deployment.
     """
 
     help = "Create tenant and landlord groups with their permissions"
@@ -49,8 +46,8 @@ class Command(BaseCommand):
                     except Permission.DoesNotExist:
                         self.stderr.write(f"missing permission: {app_label}.{codename}")
 
-            # RU: set() заменяет набор целиком — команда остаётся идемпотентной
-            # EN: set() replaces the whole set, keeping the command idempotent
+            # set() replaces the whole set, keeping the command idempotent
             group.permissions.set(permissions)
-            status = "created" if created else "updated"
-            self.stdout.write(self.style.SUCCESS(f"{group_name}: {status}"))
+            if options["verbosity"] >= 1:
+                status = "created" if created else "updated"
+                self.stdout.write(self.style.SUCCESS(f"{group_name}: {status}"))

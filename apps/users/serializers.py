@@ -12,8 +12,7 @@ from django.utils.translation import gettext_lazy as _
 
 class UserSerializer(serializers.ModelSerializer):
     """
-    RU: Публичное представление пользователя.
-    EN: Public representation of a user.
+    Public representation of a user.
     """
 
     groups = serializers.SlugRelatedField(
@@ -23,18 +22,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        # RU: внутренний id наружу не отдаём — иначе public_id бессмыслен
-        # EN: never expose the internal id, otherwise public_id is pointless
+        # never expose the internal id, otherwise public_id is pointless
         fields = ("public_id", "email", "first_name", "last_name", "phone", "groups")
         read_only_fields = ("public_id", "email", "groups")
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
-    RU: Регистрация. Роль — поле сериализатора, а не модели: источником
-        истины остаются группы Django.
-    EN: Registration. The role is a serializer field, not a model field:
-        Django groups remain the single source of truth.
+    Registration. The role is a serializer field, not a model field:
+    Django groups remain the single source of truth.
     """
 
     password = serializers.CharField(
@@ -61,8 +57,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value: str) -> str:
         """
-        RU: Прогоняем пароль через AUTH_PASSWORD_VALIDATORS из настроек.
-        EN: Run the password through AUTH_PASSWORD_VALIDATORS from settings.
+        Run the password through AUTH_PASSWORD_VALIDATORS from settings.
         """
         try:
             validate_password(value)
@@ -72,8 +67,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs: dict) -> dict:
         """
-        RU: Межполевая проверка: пароли должны совпадать.
-        EN: Cross-field check: the two passwords must match.
+        Cross-field check: the two passwords must match.
         """
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError({"password_confirm": _("Passwords do not match")})
@@ -82,8 +76,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data: dict) -> User:
         """
-        RU: Создаёт пользователя и добавляет в выбранную группу одной транзакцией.
-        EN: Creates the user and adds them to the chosen group in one transaction.
+        Creates the user and adds them to the chosen group in one transaction.
         """
         validated_data.pop("password_confirm")
         group_name = validated_data.pop("group")

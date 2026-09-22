@@ -9,12 +9,9 @@ from django.db import migrations, models
 
 def backfill_price_base(apps, schema_editor):
     """
-    RU: Заполняет price_base у уже существующих объявлений. Без этого шага
-        старые строки остались бы с нулём из default, и фильтр по цене
-        показывал бы их как бесплатные.
-    EN: Backfills price_base for listings that already exist. Without this
-        step the old rows would keep the zero from the default and the price
-        filter would treat them as free.
+    Backfills price_base for listings that already exist. Without this
+    step the old rows would keep the zero from the default and the price
+    filter would treat them as free.
     """
     from django.conf import settings
     from djmoney.contrib.exchange.models import convert_money
@@ -27,10 +24,8 @@ def backfill_price_base(apps, schema_editor):
         if currency == settings.BASE_CURRENCY:
             listing.price_base = amount
         else:
-            # RU: курсы может быть ещё не загружены update_rates — тогда
-            #     берём исходное число, как это делает Listing.save().
-            # EN: the rates may not be loaded by update_rates yet — then fall
-            #     back to the raw value, exactly as Listing.save() does.
+            # the rates may not be loaded by update_rates yet — then fall
+            # back to the raw value, exactly as Listing.save() does.
             try:
                 listing.price_base = convert_money(
                     Money(amount, currency), settings.BASE_CURRENCY
@@ -96,10 +91,8 @@ class Migration(migrations.Migration):
             name='property_type',
             field=models.CharField(choices=[('apartment', 'Apartment'), ('house', 'House'), ('studio', 'Studio'), ('room', 'Room')], help_text='apartment, house, studio or room', max_length=16, verbose_name='Тип жилья'),
         ),
-        # RU: до создания индексов по price_base — значения должны быть
-        #     настоящими уже на момент построения индекса.
-        # EN: before the price_base indexes are built — the values must be
-        #     real by the time the index is created.
+        # before the price_base indexes are built — the values must be
+        # real by the time the index is created.
         migrations.RunPython(backfill_price_base, migrations.RunPython.noop),
         migrations.AddIndex(
             model_name='listing',

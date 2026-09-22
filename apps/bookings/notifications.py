@@ -13,10 +13,8 @@ logger = logging.getLogger(__name__)
 
 def _send(*, to: str, subject: str, template: str, context: dict) -> None:
     """
-    RU: Одна точка отправки. Ошибки логируются, но наружу не пробрасываются:
-        неудачное письмо не должно ломать уже совершённое бронирование.
-    EN: A single sending point. Errors are logged but never re-raised:
-        a failed email must not break an already completed booking.
+    A single sending point. Errors are logged but never re-raised:
+    a failed email must not break an already completed booking.
     """
     try:
         body = render_to_string(template, context)
@@ -28,20 +26,16 @@ def _send(*, to: str, subject: str, template: str, context: dict) -> None:
             fail_silently=False,
         )
     except Exception:
-        # RU: exception() пишет трейсбек. Уровень ERROR, а не CRITICAL:
-        #     упавшее письмо не ломает уже совершённое бронирование.
-        # EN: exception() logs the traceback. ERROR rather than CRITICAL:
-        #     a failed email does not break an already completed booking.
+        # exception() logs the traceback. ERROR rather than CRITICAL:
+        # a failed email does not break an already completed booking.
         logger.exception("Failed to send %s to %s", template, to)
 
 
 def send_booking_created_emails(booking_id: int) -> None:
     """
-    RU: Письма обеим сторонам при создании брони. Принимает pk, а не объект:
-        вызов отложен до коммита, и за это время объект в памяти мог устареть.
-    EN: Emails to both parties when a booking is created. Takes a pk rather than
-        an object: the call is deferred until commit, by which time the in-memory
-        instance may be stale.
+    Emails to both parties when a booking is created. Takes a pk rather than
+    an object: the call is deferred until commit, by which time the in-memory
+    instance may be stale.
     """
     from .models import Booking
 
@@ -59,11 +53,9 @@ def send_booking_created_emails(booking_id: int) -> None:
         "url": f"{settings.SITE_URL}/api/bookings/{booking.public_id}/",
     }
 
-    # RU: override фиксирует язык получателя. Без него письмо уйдёт на языке
-    #     того запроса, который его породил — то есть на языке ДРУГОГО человека.
-    # EN: override pins the recipient's language. Without it the email goes out
-    #     in the language of the request that triggered it — that is, in
-    #     SOMEONE ELSE'S language.
+    # override pins the recipient's language. Without it the email goes out
+    # in the language of the request that triggered it, i.e. the other
+    # party's language.
     with override(booking.tenant.language or settings.LANGUAGE_CODE):
         _send(
             to=booking.tenant.email,
@@ -82,8 +74,7 @@ def send_booking_created_emails(booking_id: int) -> None:
 
 def send_booking_status_email(booking_id: int, old_status: str) -> None:
     """
-    RU: Письмо арендатору о смене статуса его брони.
-    EN: An email to the tenant about the status change of their booking.
+    An email to the tenant about the status change of their booking.
     """
     from .models import Booking, BookingStatus
 

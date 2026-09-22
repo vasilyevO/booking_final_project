@@ -16,23 +16,17 @@ from core.models import SoftDeleteModel, TimeStampedModel, ValidatedModel
 
 class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
     """
-    RU: Отзыв об объявлении. Привязан к бронированию, поэтому оставить отзыв
-        без факта аренды структурно невозможно. Удаление только мягкое, чтобы
-        владелец не мог обнулить репутацию, удалив объявление и создав новое.
-    EN: A listing review. Bound to a booking, so a review without an actual stay
-        is structurally impossible. Deletion is soft only, so an owner cannot
-        reset their reputation by removing a listing and recreating it.
+    A listing review. Bound to a booking, so a review without an actual stay
+    is structurally impossible. Deletion is soft only, so an owner cannot
+    reset their reputation by removing a listing and recreating it.
     """
 
-    # RU: PROTECT вместо CASCADE — удаление брони или объявления не должно
-    #     уносить отзывы вместе с собой.
-    # EN: PROTECT instead of CASCADE — deleting a booking or a listing must not
-    #     take the reviews down with it.
+    # PROTECT instead of CASCADE — deleting a booking or a listing must not
+    # take the reviews down with it.
     booking = models.OneToOneField(
         "bookings.Booking", on_delete=models.PROTECT, related_name="review"
     )
-    # RU: денормализация ради быстрой выборки «все отзывы объявления».
-    # EN: denormalised for fast "all reviews of a listing" queries.
+    # denormalised for fast "all reviews of a listing" queries.
     listing = models.ForeignKey(
         "listings.Listing",
         on_delete=models.PROTECT,
@@ -47,10 +41,8 @@ class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
         editable=False,
     )
 
-    # RU: validators дают понятную 400-ю ошибку в DRF, а CheckConstraint
-    #     защищает от bulk_create, который не вызывает валидацию.
-    # EN: validators produce a readable 400 in DRF, while the CheckConstraint
-    #     guards against bulk_create, which skips validation.
+    # validators produce a readable 400 in DRF, while the CheckConstraint
+    # guards against bulk_create, which skips validation.
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         verbose_name=_("Rating"),
@@ -86,20 +78,16 @@ class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
     @property
     def is_editable(self) -> bool:
         """
-        RU: Отзыв правится только в течение окна редактирования после
-            публикации. Порог берётся из настроек, чтобы правило не было
-            зашито в код. Свойство читает core.permissions.IsReviewAuthor.
-        EN: A review may be edited only within the edit window after it was
-            posted. The threshold comes from settings so the rule is not
-            hard-coded. Read by core.permissions.IsReviewAuthor.
+        A review may be edited only within the edit window after it was
+        posted. The threshold comes from settings so the rule is not
+        hard-coded. Read by core.permissions.IsReviewAuthor.
         """
         window = timedelta(days=getattr(settings, "REVIEW_EDIT_WINDOW_DAYS", 14))
         return timezone.now() - self.created_at <= window
 
     def clean(self) -> None:
         """
-        RU: Отзыв возможен только после фактически завершённого проживания.
-        EN: A review is only allowed after the stay has actually ended.
+        A review is only allowed after the stay has actually ended.
         """
         from apps.bookings.models import BookingStatus
 
@@ -111,8 +99,7 @@ class Review(TimeStampedModel, SoftDeleteModel, ValidatedModel):
 
     def save(self, *args, **kwargs) -> None:
         """
-        RU: Заполняет денормализованные поля из брони — источник истины один.
-        EN: Fills denormalised fields from the booking — a single source of truth.
+        Fills denormalised fields from the booking — a single source of truth.
         """
         self.listing_id = self.booking.listing_id
         self.author_id = self.booking.tenant_id

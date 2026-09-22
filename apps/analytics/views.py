@@ -15,10 +15,8 @@ from django.utils.translation import gettext_lazy as _
 
 class AnalyticsViewSet(viewsets.GenericViewSet):
     """
-    RU: Аналитика только на чтение. GenericViewSet без миксинов: CRUD здесь
-        не нужен, есть только два агрегирующих эндпоинта.
-    EN: Read-only analytics. A GenericViewSet with no mixins: CRUD is not
-        needed here, only two aggregate endpoints.
+    Read-only analytics. A GenericViewSet with no mixins: CRUD is not
+    needed here, only two aggregate endpoints.
     """
 
     permission_classes = [IsAuthenticated]
@@ -27,10 +25,8 @@ class AnalyticsViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["get"], url_path="popular-keywords")
     def popular_keywords(self, request):
         """
-        RU: Топ ключевых слов. values().annotate() группирует в БД —
-            это GROUP BY, а не подсчёт в Python.
-        EN: Top keywords. values().annotate() groups in the database —
-            a GROUP BY, not counting in Python.
+        Top keywords. values().annotate() groups in the database —
+        a GROUP BY, not counting in Python.
         """
         queryset = (
             SearchQuery.objects.values("keyword")
@@ -43,8 +39,7 @@ class AnalyticsViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["get"], url_path="popular-listings")
     def popular_listings(self, request):
         """
-        RU: Объявления по числу просмотров. Владелец видит свои, админ — все.
-        EN: Listings by view count. An owner sees their own, staff see all.
+        Listings by view count. An owner sees their own, staff see all.
         """
         stats = ListingStats.objects.select_related("listing").order_by("-views_count")
         if not request.user.is_staff:

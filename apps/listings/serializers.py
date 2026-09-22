@@ -9,8 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 class ListingPhotoSerializer(serializers.ModelSerializer):
     """
-    RU: Фотография объявления.
-    EN: A listing photo.
+    A listing photo.
     """
 
     class Meta:
@@ -21,8 +20,7 @@ class ListingPhotoSerializer(serializers.ModelSerializer):
 
 class PhotoReorderSerializer(serializers.Serializer):
     """
-    RU: Новый порядок фото: полный список id в нужной последовательности.
-    EN: New photo order: the complete list of ids in the desired sequence.
+    New photo order: the complete list of ids in the desired sequence.
     """
 
     photo_ids = serializers.ListField(
@@ -34,23 +32,18 @@ class PhotoReorderSerializer(serializers.Serializer):
 
 class ListingListSerializer(serializers.ModelSerializer):
     """
-    RU: Краткое представление для списка и поиска.
-    EN: Compact representation for list and search results.
+    Compact representation for list and search results.
     """
 
     owner_email = serializers.EmailField(source="owner.email", read_only=True)
-    # RU: значения приходят из annotate() во вьюсете. SerializerMethodField
-    #     с aggregate() дал бы запрос на каждый объект списка — N+1.
-    # EN: values come from annotate() in the viewset. A SerializerMethodField
-    #     with aggregate() would issue one query per row — the N+1 problem.
+    # values come from annotate() in the viewset. A SerializerMethodField
+    # with aggregate() would issue one query per row — the N+1 problem.
     rating = serializers.FloatField(read_only=True, default=None)
     reviews_count = serializers.IntegerField(read_only=True, default=0)
     cover_photo = serializers.SerializerMethodField()
     price_per_night = MoneySerializerField(max_digits=10, decimal_places=2)
-    # RU: колонка валюты выводится отдельным полем — так её видно в JSON
-    #     и в схеме OpenAPI.
-    # EN: the currency column is exposed as its own field, so it is visible
-    #     both in the JSON and in the OpenAPI schema.
+    # the currency column is exposed as its own field, so it is visible
+    # both in the JSON and in the OpenAPI schema.
     price_per_night_currency = serializers.CharField(read_only=True)
 
     class Meta:
@@ -65,12 +58,9 @@ class ListingListSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_cover_photo(self, obj: Listing) -> str | None:
         """
-        RU: Обложка — фото с наименьшим position. Полагается на
-            prefetch_related("photos") из ListingQuerySet.with_related():
-            без него каждое объявление в списке даст свой запрос.
-        EN: The cover is the photo with the lowest position. Relies on
-            prefetch_related("photos") from ListingQuerySet.with_related():
-            without it every listing in the list costs a query.
+        The cover is the photo with the lowest position. Relies on
+        prefetch_related("photos") from ListingQuerySet.with_related():
+        without it every listing in the list costs a query.
         """
         photos = obj.photos.all()
         photo = photos[0] if photos else None
@@ -79,15 +69,12 @@ class ListingListSerializer(serializers.ModelSerializer):
 
 class ListingDetailSerializer(ListingListSerializer):
     """
-    RU: Полная карточка объявления со всеми фото.
-    EN: Full listing card including all photos.
+    Full listing card including all photos.
     """
 
     photos = ListingPhotoSerializer(many=True, read_only=True)
-    # RU: счётчик живёт в analytics.ListingStats — отдельная таблица, чтобы
-    #     просмотры не конкурировали за строку объявления с оформлением броней.
-    # EN: the counter lives in analytics.ListingStats — a separate table, so
-    #     views do not contend for the listing row with booking creation.
+    # the counter lives in analytics.ListingStats — a separate table, so
+    # views do not contend for the listing row with booking creation.
     views_count = serializers.IntegerField(
         source="stats.views_count", read_only=True, default=0
     )
@@ -100,16 +87,12 @@ class ListingDetailSerializer(ListingListSerializer):
 
 class ListingWriteSerializer(serializers.ModelSerializer):
     """
-    RU: Создание и редактирование. Владелец подставляется из запроса,
-        клиент передать его не может.
-    EN: Create and update. The owner is taken from the request; the client
-        cannot supply it.
+    Create and update. The owner is taken from the request; the client
+    cannot supply it.
     """
 
-    # RU: HiddenField не виден ни в схеме, ни в форме, но попадает
-    #     в validated_data — иначе можно создать объявление от чужого имени.
-    # EN: HiddenField appears neither in the schema nor in the form, yet lands
-    #     in validated_data — otherwise one could post on another user's behalf.
+    # HiddenField appears neither in the schema nor in the form, yet lands
+    # in validated_data — otherwise one could post on another user's behalf.
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -123,18 +106,12 @@ class ListingWriteSerializer(serializers.ModelSerializer):
 
     def validate_city(self, value: str) -> str:
         """
-        RU: Убираем лишние пробелы у отображаемого значения. Свёрнутую форму
-            для поиска считает Listing.save() в поле city_normalized —
-            приводить city к нижнему регистру нельзя, оно видно пользователю.
-        EN: Trim the displayed value only. The folded search form is computed by
-            Listing.save() into city_normalized — city itself must not be
-            lowercased, it is shown to the user.
+        Trim the displayed value only. The folded search form is computed by
+        Listing.save() into city_normalized — city itself must not be
+        lowercased, it is shown to the user.
         """
         return value.strip()
 
-    # RU: межполевых проверок здесь нет намеренно — инварианты живут
-    #     в Listing.clean() и в CheckConstraint, а full_clean() вызывается
-    #     из ValidatedModel.save().
-    # EN: no cross-field checks here on purpose — invariants live in
-    #     Listing.clean() and in CheckConstraints, and full_clean() is invoked
-    #     by ValidatedModel.save().
+    # no cross-field checks here on purpose — invariants live in
+    # Listing.clean() and in CheckConstraints, and full_clean() is invoked
+    # by ValidatedModel.save().

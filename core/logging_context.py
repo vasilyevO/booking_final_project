@@ -4,10 +4,8 @@ import contextvars
 import logging
 import uuid
 
-# RU: ContextVar, а не threading.local: в асинхронном коде один поток
-#     обслуживает несколько корутин, и thread-local протёк бы между ними.
-# EN: a ContextVar rather than threading.local: in async code a single thread
-#     serves several coroutines, and a thread-local would leak between them.
+# a ContextVar rather than threading.local: in async code a single thread
+# serves several coroutines, and a thread-local would leak between them.
 _request_id: contextvars.ContextVar[str] = contextvars.ContextVar(
     "request_id", default="-"
 )
@@ -15,20 +13,16 @@ _request_id: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 def get_request_id() -> str:
     """
-    RU: Идентификатор текущего запроса или "-" вне запроса
-        (management-команда, shell, тест).
-    EN: The current request's identifier, or "-" outside a request
-        (management command, shell, test).
+    The current request's identifier, or "-" outside a request
+    (management command, shell, test).
     """
     return _request_id.get()
 
 
 def set_request_id(value: str):
     """
-    RU: Возвращает токен для reset() — обязательно вызвать его в finally,
-        иначе значение утечёт в следующий запрос того же воркера.
-    EN: Returns a token for reset() — always call it in finally, otherwise the
-        value leaks into the next request handled by the same worker.
+    Returns a token for reset() — always call it in finally, otherwise the
+    value leaks into the next request handled by the same worker.
     """
     return _request_id.set(value)
 
@@ -43,14 +37,10 @@ def new_request_id() -> str:
 
 class RequestIdFilter(logging.Filter):
     """
-    RU: Подставляет request_id в каждую запись лога. Фильтр вешается на
-        ОБРАБОТЧИК, а не на логгер: тогда он применяется ко всем записям,
-        включая те, что пришли из Django и сторонних библиотек. Без этого
-        формат с %(request_id)s упал бы на чужой записи.
-    EN: Injects request_id into every log record. The filter is attached to the
-        HANDLER rather than a logger: that way it applies to every record,
-        including those from Django and third-party libraries. Otherwise a
-        format containing %(request_id)s would break on a foreign record.
+    Injects request_id into every log record. The filter is attached to the
+    HANDLER rather than a logger: that way it applies to every record,
+    including those from Django and third-party libraries. Otherwise a
+    format containing %(request_id)s would break on a foreign record.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:

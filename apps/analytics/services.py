@@ -9,10 +9,8 @@ from .models import ListingView, ListingStats
 
 def register_listing_view(*, listing_id: int, user=None, session_key: str = "") -> None:
     """
-    RU: Фиксирует просмотр и увеличивает счётчик в отдельной таблице.
-        Строка listings_listing при этом не трогается.
-    EN: Records a view and bumps the counter in the separate stats table.
-        The listings_listing row is never touched.
+    Records a view and bumps the counter in the separate stats table.
+    The listings_listing row is never touched.
     """
     _view, created = ListingView.objects.get_or_create(
         listing_id=listing_id,
@@ -24,8 +22,7 @@ def register_listing_view(*, listing_id: int, user=None, session_key: str = "") 
         return
 
     ListingStats.objects.get_or_create(listing_id=listing_id)
-    # RU: атомарный инкремент — арифметика выполняется в БД
-    # EN: atomic increment — the arithmetic runs in the database
+    # atomic increment — the arithmetic runs in the database
     ListingStats.objects.filter(listing_id=listing_id).update(
         views_count=F("views_count") + 1, last_viewed_at=timezone.now()
     )

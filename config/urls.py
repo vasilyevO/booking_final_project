@@ -14,10 +14,8 @@ from apps.listings.views import ListingViewSet
 from apps.reviews.views import ReviewViewSet
 from apps.users.views import UserViewSet
 
-# RU: DefaultRouter сам строит карту URL и добавляет корневой индекс API.
-#     Экшены с @action попадают в неё автоматически.
-# EN: DefaultRouter builds the URL map and adds an API root index.
-#     @action endpoints are registered automatically.
+# DefaultRouter builds the URL map and adds an API root index.
+# @action endpoints are registered automatically.
 router = DefaultRouter()
 router.register("listings", ListingViewSet, basename="listing")
 router.register("bookings", BookingViewSet, basename="booking")

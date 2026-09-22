@@ -1,9 +1,7 @@
 services:
   db:
-    # RU: точная версия, а не mysql:8. Плавающий тег однажды приведёт не туда,
-    #     а Django 6.1 отказывается работать с MySQL ниже 8.4.
-    # EN: a pinned version rather than mysql:8. A floating tag will eventually
-    #     land somewhere else, and Django 6.1 refuses MySQL below 8.4.
+    # a pinned version rather than mysql:8. A floating tag will eventually
+    # land somewhere else, and Django 6.1 refuses MySQL below 8.4.
     image: mysql:8.4
     restart: unless-stopped
     environment:
@@ -17,19 +15,13 @@ services:
 #    ports:
 #      - "3306:3306"
     volumes:
-      # RU: именованный том, а не ./db:/var/lib/mysql. Bind mount с
-      #     Windows-хоста ломает MySQL правами доступа, и данными управляет
-      #     сам Docker, а не файловая система хоста.
-      # EN: a named volume rather than ./db:/var/lib/mysql. A bind mount from a
-      #     Windows host breaks MySQL on permissions, and Docker — not the host
-      #     filesystem — manages the data.
+      # a named volume rather than ./db:/var/lib/mysql. A bind mount from a
+      # Windows host breaks MySQL on permissions, and Docker — not the host
+      # filesystem — manages the data.
       - mysql_data:/var/lib/mysql
-    # RU: порт наружу НЕ публикуем: на EC2 это была бы база в интернете.
-    #     Внутри сети Compose сервисы видят друг друга по имени через
-    #     встроенный DNS (тема 24).
-    # EN: the port is NOT published: on EC2 that would be a database exposed to
-    #     the internet. Inside the Compose network services reach each other by
-    #     name through the built-in DNS.
+    # the port is NOT published: on EC2 that would be a database exposed to
+    # the internet. Inside the Compose network services reach each other by
+    # name through the built-in DNS.
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
              "-p${DB_ROOT_PASSWORD}"]
@@ -43,30 +35,23 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    # RU: env_file вместо перечисления переменных. Пароли в открытом виде
-    #     в docker-compose.yml — это пароли в Git.
-    # EN: env_file instead of listing variables. Plain-text passwords in
-    #     docker-compose.yml are passwords in Git.
+    # env_file instead of listing variables. Plain-text passwords in
+    # docker-compose.yml are passwords in Git.
     env_file: .env
     environment:
       DB_HOST: db
       DB_PORT: 3306
       IN_CONTAINER: "True"
     volumes:
-      # RU: общие тома с nginx: загруженные фото и собранная статика.
-      #     Без тома для media фотографии исчезнут при пересоздании контейнера.
-      # EN: volumes shared with nginx: uploaded photos and collected static.
-      #     Without the media volume, photos vanish when the container is recreated.
+      # volumes shared with nginx: uploaded photos and collected static.
+      # Without the media volume, photos vanish when the container is recreated.
       - media_files:/app/media
       - static_files:/app/staticfiles
     depends_on:
       db:
-        # RU: service_healthy, а не просто depends_on. Обычный depends_on ждёт
-        #     лишь запуска контейнера, а не готовности СУБД принимать
-        #     соединения — именно поэтому в исходнике стоял sleep 15 (тема 25).
-        # EN: service_healthy rather than a bare depends_on. A plain depends_on
-        #     waits only for the container to start, not for the database to
-        #     accept connections — which is why the original had sleep 15.
+        # service_healthy rather than a bare depends_on. A plain depends_on
+        # waits only for the container to start, not for the database to
+        # accept connections.
         condition: service_healthy
 
   nginx:

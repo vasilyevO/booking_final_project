@@ -6,10 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 class PopularKeywordSerializer(serializers.Serializer):
     """
-    RU: Строка агрегата: ключевое слово и число обращений.
-        Не ModelSerializer — источником служит values().annotate().
-    EN: An aggregate row: keyword and hit count. Not a ModelSerializer,
-        since the source is values().annotate().
+    An aggregate row: keyword and hit count. Not a ModelSerializer,
+    since the source is values().annotate().
     """
 
     keyword = serializers.CharField(help_text=_("Normalised search keyword"))
@@ -18,8 +16,7 @@ class PopularKeywordSerializer(serializers.Serializer):
 
 class PopularListingSerializer(serializers.Serializer):
     """
-    RU: Объявление в рейтинге популярности по числу просмотров.
-    EN: A listing in the popularity ranking by view count.
+    A listing in the popularity ranking by view count.
     """
 
     public_id = serializers.UUIDField()

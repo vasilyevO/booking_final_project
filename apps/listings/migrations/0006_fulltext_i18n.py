@@ -2,6 +2,8 @@
 
 from django.db import migrations
 
+from core.db import MySQLOnlyRunSQL
+
 
 class Migration(migrations.Migration):
 
@@ -10,22 +12,22 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
+        MySQLOnlyRunSQL(
             sql="DROP INDEX listing_search_ft ON listings_listing;",
             reverse_sql="CREATE FULLTEXT INDEX listing_search_ft "
                         "ON listings_listing (title, description);",
         ),
-        migrations.RunSQL(
+        MySQLOnlyRunSQL(
             sql="CREATE FULLTEXT INDEX listing_ft_en "
                 "ON listings_listing (title_en, description_en);",
             reverse_sql="DROP INDEX listing_ft_en ON listings_listing;",
         ),
-        migrations.RunSQL(
+        MySQLOnlyRunSQL(
             sql="CREATE FULLTEXT INDEX listing_ft_de "
                 "ON listings_listing (title_de, description_de);",
             reverse_sql="DROP INDEX listing_ft_de ON listings_listing;",
         ),
-        migrations.RunSQL(
+        MySQLOnlyRunSQL(
             sql="CREATE FULLTEXT INDEX listing_ft_ru "
                 "ON listings_listing (title_ru, description_ru);",
             reverse_sql="DROP INDEX listing_ft_ru ON listings_listing;",

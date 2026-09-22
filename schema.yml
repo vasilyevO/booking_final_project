@@ -8,10 +8,8 @@ paths:
     get:
       operationId: analytics_popular_keywords_retrieve
       description: |-
-        RU: Топ ключевых слов. values().annotate() группирует в БД —
-            это GROUP BY, а не подсчёт в Python.
-        EN: Top keywords. values().annotate() groups in the database —
-            a GROUP BY, not counting in Python.
+        Top keywords. values().annotate() groups in the database —
+        a GROUP BY, not counting in Python.
       summary: Most searched keywords
       tags:
       - analytics
@@ -27,9 +25,7 @@ paths:
   /api/analytics/popular-listings/:
     get:
       operationId: analytics_popular_listings_retrieve
-      description: |-
-        RU: Объявления по числу просмотров. Владелец видит свои, админ — все.
-        EN: Listings by view count. An owner sees their own, staff see all.
+      description: Listings by view count. An owner sees their own, staff see all.
       summary: Most viewed listings
       tags:
       - analytics
@@ -100,10 +96,8 @@ paths:
     get:
       operationId: bookings_list
       description: |-
-        RU: Бронирования. Полного update нет намеренно: статус меняется только
-            явными действиями, каждое со своей проверкой прав.
-        EN: Bookings. There is deliberately no full update: the status changes only
-            through explicit actions, each with its own permission check.
+        Bookings. There is deliberately no full update: the status changes only
+        through explicit actions, each with its own permission check.
       summary: My bookings, as a tenant or as a landlord
       parameters:
       - name: ordering
@@ -144,10 +138,8 @@ paths:
     post:
       operationId: bookings_create
       description: |-
-        RU: Бронирования. Полного update нет намеренно: статус меняется только
-            явными действиями, каждое со своей проверкой прав.
-        EN: Bookings. There is deliberately no full update: the status changes only
-            through explicit actions, each with its own permission check.
+        Bookings. There is deliberately no full update: the status changes only
+        through explicit actions, each with its own permission check.
       summary: Create a booking
       tags:
       - bookings
@@ -176,10 +168,8 @@ paths:
     get:
       operationId: bookings_retrieve
       description: |-
-        RU: Бронирования. Полного update нет намеренно: статус меняется только
-            явными действиями, каждое со своей проверкой прав.
-        EN: Bookings. There is deliberately no full update: the status changes only
-            through explicit actions, each with its own permission check.
+        Bookings. There is deliberately no full update: the status changes only
+        through explicit actions, each with its own permission check.
       parameters:
       - in: path
         name: public_id
@@ -201,9 +191,7 @@ paths:
   /api/bookings/{public_id}/cancel/:
     post:
       operationId: bookings_cancel_create
-      description: |-
-        RU: Отменить может любой участник. Срок отмены проверяет модель.
-        EN: Either participant may cancel. The deadline is checked by the model.
+      description: Either participant may cancel. The deadline is checked by the model.
       summary: Cancel a booking (tenant or landlord)
       parameters:
       - in: path
@@ -227,10 +215,8 @@ paths:
     post:
       operationId: bookings_confirm_create
       description: |-
-        RU: Бронирования. Полного update нет намеренно: статус меняется только
-            явными действиями, каждое со своей проверкой прав.
-        EN: Bookings. There is deliberately no full update: the status changes only
-            through explicit actions, each with its own permission check.
+        Bookings. There is deliberately no full update: the status changes only
+        through explicit actions, each with its own permission check.
       summary: Confirm a booking (landlord only)
       parameters:
       - in: path
@@ -254,10 +240,8 @@ paths:
     post:
       operationId: bookings_reject_create
       description: |-
-        RU: Бронирования. Полного update нет намеренно: статус меняется только
-            явными действиями, каждое со своей проверкой прав.
-        EN: Bookings. There is deliberately no full update: the status changes only
-            through explicit actions, each with its own permission check.
+        Bookings. There is deliberately no full update: the status changes only
+        through explicit actions, each with its own permission check.
       summary: Reject a booking (landlord only)
       parameters:
       - in: path
@@ -280,11 +264,7 @@ paths:
   /api/listings/:
     get:
       operationId: listings_list
-      description: |-
-        RU: Поисковый запрос попадает в аналитику — без этой записи
-            эндпоинт popular-keywords всегда отдавал пустой список.
-        EN: The search term is recorded for analytics — without this write the
-            popular-keywords endpoint always returned an empty list.
+      description: Records the search term for the popular-keywords analytics endpoint.
       summary: Search and filter listings
       parameters:
       - in: query
@@ -369,10 +349,8 @@ paths:
     post:
       operationId: listings_create
       description: |-
-        RU: Объявления. Чтение открыто анонимам, создание требует группы
-            landlords, редактирование — владения объектом.
-        EN: Listings. Reading is open to anonymous users, creating requires the
-            landlords group, editing requires object ownership.
+        Listings. Reading is open to anonymous users, creating requires the
+        landlords group, editing requires object ownership.
       tags:
       - listings
       requestBody:
@@ -399,9 +377,8 @@ paths:
   /api/listings/{public_id}/:
     get:
       operationId: listings_retrieve
-      description: |-
-        RU: Просмотр фиксируется в analytics и не трогает строку объявления.
-        EN: The view is recorded in analytics and never touches the listing row.
+      description: The view is recorded in analytics and never touches the listing
+        row.
       summary: Listing details
       parameters:
       - in: path
@@ -425,10 +402,8 @@ paths:
     put:
       operationId: listings_update
       description: |-
-        RU: Объявления. Чтение открыто анонимам, создание требует группы
-            landlords, редактирование — владения объектом.
-        EN: Listings. Reading is open to anonymous users, creating requires the
-            landlords group, editing requires object ownership.
+        Listings. Reading is open to anonymous users, creating requires the
+        landlords group, editing requires object ownership.
       parameters:
       - in: path
         name: public_id
@@ -462,10 +437,8 @@ paths:
     patch:
       operationId: listings_partial_update
       description: |-
-        RU: Объявления. Чтение открыто анонимам, создание требует группы
-            landlords, редактирование — владения объектом.
-        EN: Listings. Reading is open to anonymous users, creating requires the
-            landlords group, editing requires object ownership.
+        Listings. Reading is open to anonymous users, creating requires the
+        landlords group, editing requires object ownership.
       parameters:
       - in: path
         name: public_id
@@ -498,10 +471,8 @@ paths:
     delete:
       operationId: listings_destroy
       description: |-
-        RU: Объявления. Чтение открыто анонимам, создание требует группы
-            landlords, редактирование — владения объектом.
-        EN: Listings. Reading is open to anonymous users, creating requires the
-            landlords group, editing requires object ownership.
+        Listings. Reading is open to anonymous users, creating requires the
+        landlords group, editing requires object ownership.
       parameters:
       - in: path
         name: public_id
@@ -519,9 +490,7 @@ paths:
   /api/listings/{public_id}/photos/:
     post:
       operationId: listings_photos_create
-      description: |-
-        RU: Загрузка фото. Позиция по умолчанию — в конец списка.
-        EN: Photo upload. The default position appends to the end of the list.
+      description: Photo upload. The default position appends to the end of the list.
       summary: Upload a photo
       parameters:
       - in: path
@@ -553,9 +522,7 @@ paths:
   /api/listings/{public_id}/photos/reorder/:
     post:
       operationId: listings_photos_reorder_create
-      description: |-
-        RU: Перестановка фото целиком, одной транзакцией.
-        EN: Reorders all photos at once, in a single transaction.
+      description: Reorders all photos at once, in a single transaction.
       summary: Reorder photos
       parameters:
       - in: path
@@ -590,9 +557,7 @@ paths:
   /api/listings/{public_id}/reviews/:
     get:
       operationId: listings_reviews_retrieve
-      description: |-
-        RU: Отзывы объявления. Открыто всем, мягко удалённые скрыты.
-        EN: Reviews of the listing. Public, soft-deleted ones are hidden.
+      description: Reviews of the listing. Public, soft-deleted ones are hidden.
       summary: Reviews of this listing
       parameters:
       - in: path
@@ -617,10 +582,8 @@ paths:
     get:
       operationId: reviews_list
       description: |-
-        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
-            доступно только админу через админку, и только мягкое.
-        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
-            a staff-only action through the admin, and soft only.
+        Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+        a staff-only action through the admin, and soft only.
       parameters:
       - name: ordering
         required: false
@@ -661,10 +624,8 @@ paths:
     post:
       operationId: reviews_create
       description: |-
-        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
-            доступно только админу через админку, и только мягкое.
-        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
-            a staff-only action through the admin, and soft only.
+        Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+        a staff-only action through the admin, and soft only.
       tags:
       - reviews
       requestBody:
@@ -692,10 +653,8 @@ paths:
     get:
       operationId: reviews_retrieve
       description: |-
-        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
-            доступно только админу через админку, и только мягкое.
-        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
-            a staff-only action through the admin, and soft only.
+        Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+        a staff-only action through the admin, and soft only.
       parameters:
       - in: path
         name: id
@@ -718,10 +677,8 @@ paths:
     put:
       operationId: reviews_update
       description: |-
-        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
-            доступно только админу через админку, и только мягкое.
-        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
-            a staff-only action through the admin, and soft only.
+        Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+        a staff-only action through the admin, and soft only.
       parameters:
       - in: path
         name: id
@@ -735,13 +692,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReviewCreate'
+              $ref: '#/components/schemas/ReviewUpdate'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ReviewCreate'
+              $ref: '#/components/schemas/ReviewUpdate'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ReviewCreate'
+              $ref: '#/components/schemas/ReviewUpdate'
         required: true
       security:
       - jwtAuth: []
@@ -750,15 +707,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReviewCreate'
+                $ref: '#/components/schemas/ReviewUpdate'
           description: ''
     patch:
       operationId: reviews_partial_update
       description: |-
-        RU: Отзывы. DestroyModelMixin отсутствует намеренно: удаление отзыва
-            доступно только админу через админку, и только мягкое.
-        EN: Reviews. DestroyModelMixin is deliberately absent: deleting a review is
-            a staff-only action through the admin, and soft only.
+        Reviews. DestroyModelMixin is deliberately absent: deleting a review is
+        a staff-only action through the admin, and soft only.
       parameters:
       - in: path
         name: id
@@ -772,13 +727,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedReviewCreate'
+              $ref: '#/components/schemas/PatchedReviewUpdate'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedReviewCreate'
+              $ref: '#/components/schemas/PatchedReviewUpdate'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedReviewCreate'
+              $ref: '#/components/schemas/PatchedReviewUpdate'
       security:
       - jwtAuth: []
       responses:
@@ -786,16 +741,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReviewCreate'
+                $ref: '#/components/schemas/ReviewUpdate'
           description: ''
   /api/users/{public_id}/:
     get:
       operationId: users_retrieve
       description: |-
-        RU: Пользователи. Списка нет намеренно: перечень всех аккаунтов —
-            утечка персональных данных, для проекта он не нужен.
-        EN: Users. There is deliberately no list endpoint: enumerating all accounts
-            leaks personal data and the project does not need it.
+        Users. There is deliberately no list endpoint: enumerating all accounts
+        leaks personal data and the project does not need it.
       parameters:
       - in: path
         name: public_id
@@ -818,10 +771,8 @@ paths:
     get:
       operationId: users_me_retrieve
       description: |-
-        RU: Свой профиль. Отдельный эндпоинт, чтобы клиенту не нужно было
-            знать собственный public_id.
-        EN: The caller's own profile. A dedicated endpoint so the client does
-            not need to know its own public_id.
+        The caller's own profile. A dedicated endpoint so the client does
+        not need to know its own public_id.
       summary: Current user profile
       tags:
       - users
@@ -837,10 +788,8 @@ paths:
     patch:
       operationId: users_me_partial_update
       description: |-
-        RU: Свой профиль. Отдельный эндпоинт, чтобы клиенту не нужно было
-            знать собственный public_id.
-        EN: The caller's own profile. A dedicated endpoint so the client does
-            not need to know its own public_id.
+        The caller's own profile. A dedicated endpoint so the client does
+        not need to know its own public_id.
       summary: Current user profile
       tags:
       - users
@@ -867,9 +816,7 @@ paths:
   /api/users/register/:
     post:
       operationId: users_register_create
-      description: |-
-        RU: Регистрация. Единственный эндпоинт, открытый анонимам.
-        EN: Registration. The only endpoint open to anonymous users.
+      description: Registration. The only endpoint open to anonymous users.
       summary: Register a new account
       tags:
       - users
@@ -900,10 +847,8 @@ components:
     BookingCreate:
       type: object
       description: |-
-        RU: Создание брони. Не ModelSerializer: снимки цены и заголовка
-            считает сервис, клиент их передать не должен.
-        EN: Booking creation. Not a ModelSerializer: the price and title snapshots
-            are computed by the service and must not come from the client.
+        Booking creation. Not a ModelSerializer: the price and title snapshots
+        are computed by the service and must not come from the client.
       properties:
         listing:
           type: string
@@ -928,9 +873,7 @@ components:
       - start_date
     BookingRead:
       type: object
-      description: |-
-        RU: Представление брони для владельца и арендатора.
-        EN: Booking representation for both the landlord and the tenant.
+      description: Booking representation for both the landlord and the tenant.
       properties:
         public_id:
           type: string
@@ -1013,9 +956,7 @@ components:
         * `landlords` - landlords
     ListingDetail:
       type: object
-      description: |-
-        RU: Полная карточка объявления со всеми фото.
-        EN: Full listing card including all photos.
+      description: Full listing card including all photos.
       properties:
         public_id:
           type: string
@@ -1124,9 +1065,7 @@ components:
       - views_count
     ListingList:
       type: object
-      description: |-
-        RU: Краткое представление для списка и поиска.
-        EN: Compact representation for list and search results.
+      description: Compact representation for list and search results.
       properties:
         public_id:
           type: string
@@ -1206,9 +1145,7 @@ components:
       - title
     ListingPhoto:
       type: object
-      description: |-
-        RU: Фотография объявления.
-        EN: A listing photo.
+      description: A listing photo.
       properties:
         id:
           type: integer
@@ -1224,8 +1161,9 @@ components:
           maxLength: 200
         position:
           type: integer
-          maximum: 65535
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           description: Display order, ascending. The lowest value is the cover photo
       required:
       - id
@@ -1233,10 +1171,8 @@ components:
     ListingWrite:
       type: object
       description: |-
-        RU: Создание и редактирование. Владелец подставляется из запроса,
-            клиент передать его не может.
-        EN: Create and update. The owner is taken from the request; the client
-            cannot supply it.
+        Create and update. The owner is taken from the request; the client
+        cannot supply it.
       properties:
         public_id:
           type: string
@@ -1371,10 +1307,8 @@ components:
     PatchedListingWrite:
       type: object
       description: |-
-        RU: Создание и редактирование. Владелец подставляется из запроса,
-            клиент передать его не может.
-        EN: Create and update. The owner is taken from the request; the client
-            cannot supply it.
+        Create and update. The owner is taken from the request; the client
+        cannot supply it.
       properties:
         public_id:
           type: string
@@ -1429,21 +1363,15 @@ components:
           type: boolean
           title: Active
           description: Inactive listings are hidden from search but keep their bookings
-    PatchedReviewCreate:
+    PatchedReviewUpdate:
       type: object
       description: |-
-        RU: Создание отзыва. Объявление и автор берутся из брони, поэтому
-            в запросе их нет.
-        EN: Review creation. The listing and the author are derived from the
-            booking, so they are absent from the request.
+        Review editing. Only the rating and the text may change: the booking,
+        and with it the listing and the author, are fixed once the review exists.
       properties:
         id:
           type: integer
           readOnly: true
-        booking:
-          type: string
-          format: uuid
-          description: public_id of the completed booking being reviewed
         rating:
           type: integer
           maximum: 5
@@ -1455,9 +1383,7 @@ components:
           maxLength: 2000
     PatchedUser:
       type: object
-      description: |-
-        RU: Публичное представление пользователя.
-        EN: Public representation of a user.
+      description: Public representation of a user.
       properties:
         public_id:
           type: string
@@ -1484,9 +1410,7 @@ components:
           description: Role groups the user belongs to
     PhotoReorder:
       type: object
-      description: |-
-        RU: Новый порядок фото: полный список id в нужной последовательности.
-        EN: New photo order: the complete list of ids in the desired sequence.
+      description: 'New photo order: the complete list of ids in the desired sequence.'
       properties:
         photo_ids:
           type: array
@@ -1498,10 +1422,8 @@ components:
     PopularKeyword:
       type: object
       description: |-
-        RU: Строка агрегата: ключевое слово и число обращений.
-            Не ModelSerializer — источником служит values().annotate().
-        EN: An aggregate row: keyword and hit count. Not a ModelSerializer,
-            since the source is values().annotate().
+        An aggregate row: keyword and hit count. Not a ModelSerializer,
+        since the source is values().annotate().
       properties:
         keyword:
           type: string
@@ -1514,9 +1436,7 @@ components:
       - total
     PopularListing:
       type: object
-      description: |-
-        RU: Объявление в рейтинге популярности по числу просмотров.
-        EN: A listing in the popularity ranking by view count.
+      description: A listing in the popularity ranking by view count.
       properties:
         public_id:
           type: string
@@ -1545,10 +1465,8 @@ components:
     Register:
       type: object
       description: |-
-        RU: Регистрация. Роль — поле сериализатора, а не модели: источником
-            истины остаются группы Django.
-        EN: Registration. The role is a serializer field, not a model field:
-            Django groups remain the single source of truth.
+        Registration. The role is a serializer field, not a model field:
+        Django groups remain the single source of truth.
       properties:
         public_id:
           type: string
@@ -1593,10 +1511,8 @@ components:
     ReviewCreate:
       type: object
       description: |-
-        RU: Создание отзыва. Объявление и автор берутся из брони, поэтому
-            в запросе их нет.
-        EN: Review creation. The listing and the author are derived from the
-            booking, so they are absent from the request.
+        Review creation. The listing and the author are derived from the
+        booking, so they are absent from the request.
       properties:
         id:
           type: integer
@@ -1620,9 +1536,7 @@ components:
       - rating
     ReviewRead:
       type: object
-      description: |-
-        RU: Отзыв в списке объявления.
-        EN: A review as shown on a listing.
+      description: A review as shown on a listing.
       properties:
         id:
           type: integer
@@ -1647,6 +1561,27 @@ components:
       required:
       - author_email
       - created_at
+      - id
+      - rating
+    ReviewUpdate:
+      type: object
+      description: |-
+        Review editing. Only the rating and the text may change: the booking,
+        and with it the listing and the author, are fixed once the review exists.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: Rating from 1 to 5
+        text:
+          type: string
+          description: Free-form review, up to 2000 characters
+          maxLength: 2000
+      required:
       - id
       - rating
     StatusEnum:
@@ -1697,9 +1632,7 @@ components:
       - refresh
     User:
       type: object
-      description: |-
-        RU: Публичное представление пользователя.
-        EN: Public representation of a user.
+      description: Public representation of a user.
       properties:
         public_id:
           type: string

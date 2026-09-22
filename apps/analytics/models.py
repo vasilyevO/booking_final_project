@@ -10,8 +10,7 @@ from core.models import TimeStampedModel
 
 class SearchQuery(TimeStampedModel):
     """
-    RU: Запись поискового запроса для вывода популярных ключевых слов.
-    EN: A recorded search query used to surface popular keywords.
+    A recorded search query used to surface popular keywords.
     """
 
     user = models.ForeignKey(
@@ -21,8 +20,7 @@ class SearchQuery(TimeStampedModel):
         blank=True,
         related_name="search_queries",
     )
-    # RU: хранить нормализованным (lower + strip), иначе «Köln» и «köln» разойдутся.
-    # EN: store normalised (lower + strip), otherwise "Köln" and "köln" diverge.
+    # store normalised (lower + strip), otherwise "Köln" and "köln" diverge.
     keyword = models.CharField(max_length=200, db_index=True)
     results_count = models.PositiveIntegerField(default=0)
 
@@ -39,20 +37,15 @@ class SearchQuery(TimeStampedModel):
 
 class ListingStats(models.Model):
     """
-    RU: Агрегированные счётчики объявления. Отдельная таблица, потому что
-        просмотры — другой бизнес-процесс: они пишутся на порядки чаще,
-        не нуждаются в истории изменений и не должны блокировать оформление
-        брони, которое держит строку listings_listing под select_for_update.
-    EN: Aggregated listing counters. A separate table because views are a
-        different business process: written orders of magnitude more often,
-        need no change history, and must not block booking creation, which
-        holds the listings_listing row under select_for_update.
+    Aggregated listing counters. A separate table because views are a
+    different business process: written orders of magnitude more often,
+    need no change history, and must not block booking creation, which
+    holds the listings_listing row under select_for_update.
     """
 
     listing = models.OneToOneField(
         "listings.Listing",
-        # RU: PROTECT — статистика переживает оперативные данные
-        # EN: PROTECT — analytics outlives the operational data
+        # PROTECT — analytics outlives the operational data
         on_delete=models.PROTECT,
         related_name="stats",
         primary_key=True,
@@ -69,8 +62,7 @@ class ListingStats(models.Model):
         verbose_name = _("Listing statistics")
         verbose_name_plural = _("Listing statistics")
         indexes = [
-            # RU: под сортировку «сначала популярные»
-            # EN: supports the "most popular first" ordering
+            # supports the "most popular first" ordering
             models.Index(fields=("-views_count",), name="stats_views_desc_idx"),
         ]
 
@@ -80,14 +72,12 @@ class ListingStats(models.Model):
 
 class ListingView(TimeStampedModel):
     """
-    RU: Журнал просмотров, только на добавление. Дедуплицирован по дню.
-    EN: Append-only view log, de-duplicated per day.
+    Append-only view log, de-duplicated per day.
     """
 
     listing = models.ForeignKey(
         "listings.Listing",
-        # RU: CASCADE убран: аналитика не должна исчезать вместе с объявлением
-        # EN: CASCADE removed: analytics must not vanish with the listing
+        # PROTECT: analytics must not vanish with the listing
         on_delete=models.PROTECT,
         related_name="view_records",
     )
@@ -106,10 +96,8 @@ class ListingView(TimeStampedModel):
         verbose_name_plural = _("View history")
         ordering = ("-created_at",)
         constraints = [
-            # RU: в MySQL NULL != NULL, поэтому анонимы дедуплицируются
-            #     по session_key, а не по user.
-            # EN: in MySQL NULL != NULL, so anonymous visitors are de-duplicated
-            #     by session_key rather than by user.
+            # in MySQL NULL != NULL, so anonymous visitors are de-duplicated
+            # by session_key rather than by user.
             models.UniqueConstraint(
                 fields=("listing", "user", "session_key", "viewed_on"),
                 name="uniq_listing_view_per_day",

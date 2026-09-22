@@ -19,41 +19,34 @@ import logging.config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# RU: читаем .env из корня проекта до обращения к переменным
-# EN: load .env from the project root before any variable is accessed
+# load .env from the project root before any variable is accessed
 load_dotenv(BASE_DIR / ".env")
 
 
 def env_bool(key: str, default: bool = False) -> bool:
     """
-    RU: Приводит строку из окружения к bool. Голый bool("False") — это True.
-    EN: Casts an environment string to bool. A bare bool("False") evaluates to True.
+    Casts an environment string to bool. A bare bool("False") evaluates to True.
     """
     return os.getenv(key, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
 def env_list(key: str, default: str = "") -> list[str]:
     """
-    RU: Разбирает список значений, разделённых запятыми.
-    EN: Parses a comma-separated list of values.
+    Parses a comma-separated list of values.
     """
     return [item.strip() for item in os.getenv(key, default).split(",") if item.strip()]
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# RU: без значения по умолчанию — приложение не стартует без ключа
-# EN: no default — the app must not start without a key
+# no default — the app must not start without a key
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = env_bool("DEBUG", False)
 
-# RU: за nginx Django видит только его соединение. Без доверия заголовку
-#     X-Forwarded-Proto он под HTTPS строит ссылки с http://, и CSRF-проверка
-#     на POST-формы из админки начинает отклонять запросы.
-# EN: behind nginx Django sees only its connection. Without trusting the
-#     X-Forwarded-Proto header it builds http:// links under HTTPS, and the
-#     CSRF check starts rejecting POST forms from the admin.
+# behind nginx Django sees only its connection. Without trusting the
+# X-Forwarded-Proto header it builds http:// links under HTTPS, and the
+# CSRF check starts rejecting POST forms from the admin.
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://localhost")
@@ -71,8 +64,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "djmoney",
-    # RU: contrib.exchange хранит курсы и даёт convert_money()
-    # EN: contrib.exchange stores the rates and provides convert_money()
+    # contrib.exchange stores the rates and provides convert_money()
     "djmoney.contrib.exchange",
 
 # third-party
@@ -97,34 +89,28 @@ INSTALLED_APPS = [
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = "en"
 MODELTRANSLATION_LANGUAGES = ("en", "de", "ru")
-# RU: если перевода нет — показываем язык по умолчанию, а не пустоту
-# EN: when a translation is missing, fall back to the default language
+# when a translation is missing, fall back to the default language
 MODELTRANSLATION_FALLBACK_LANGUAGES = ("en",)
 
-# RU: базовая валюта проекта. Всё, что нужно сравнивать и сортировать,
-#     приводится к ней в денормализованной колонке.
-# EN: the project's base currency. Anything that must be compared or sorted
-#     is converted into it in a denormalised column.
+# the project's base currency. Anything that must be compared or sorted
+# is converted into it in a denormalised column.
 BASE_CURRENCY = "EUR"
 DEFAULT_CURRENCY = "EUR"
 
-# RU: ограничивает выпадающий список и значения колонки *_currency
-# EN: limits the dropdown and the values of the *_currency column
+# limits the dropdown and the values of the *_currency column
 CURRENCIES = ("EUR", "USD", "GBP", "PLN", "CZK")
 CURRENCY_CHOICES = [
     ("EUR", "EUR €"), ("USD", "USD $"), ("GBP", "GBP £"),
     ("PLN", "PLN zł"), ("CZK", "CZK Kč"),
 ]
 
-# RU: свой бэкенд с фиксированными курсами — внешний API требует ключа,
-#     а на защите может не быть интернета. Замена на боевой бэкенд —
-#     одна строка, это Open/Closed на практике.
-# EN: a local fixed-rate backend — an external API needs a key and there may
-#     be no internet during the defence. Swapping in a production backend is
-#     a one-line change: Open/Closed in practice.
+# a local fixed-rate backend: deterministic and needs neither network access
+# nor an API key. To use live rates, point this at another djmoney backend
+# (e.g. OpenExchangeRatesBackend); no other code changes are needed.
 EXCHANGE_BACKEND = "apps.listings.exchange.StaticExchangeBackend"
 
-AUTH_USER_MODEL = "users.User"      # до первой миграции!
+# must be set before the first migration and never changed afterwards
+AUTH_USER_MODEL = "users.User"
 
 
 MIDDLEWARE = [
@@ -161,9 +147,6 @@ TEMPLATES = [
 #------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # RU: наш обработчик, а не библиотечный напрямую — см. core/exceptions.py
-    # EN: our handler rather than the library one — see core/exceptions.py
-
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
@@ -172,6 +155,7 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
         "rest_framework.filters.SearchFilter",
     ],
+    # our handler rather than the library one — see core/exceptions.py
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
@@ -179,10 +163,8 @@ REST_FRAMEWORK = {
 }
 
 DRF_STANDARDIZED_ERRORS = {
-    # RU: в разработке показываем и необработанные исключения в том же
-    #     формате — иначе 500 приходит голым HTML и его неудобно читать.
-    # EN: in development unhandled exceptions use the same format too —
-    #     otherwise a 500 arrives as raw HTML and is awkward to read.
+    # in development unhandled exceptions use the same format too —
+    # otherwise a 500 arrives as raw HTML and is awkward to read.
     "ENABLE_IN_DEBUG_FOR_UNHANDLED_EXCEPTIONS": DEBUG,
 }
 
@@ -191,17 +173,13 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Housing rental booking service",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    # RU: постпроцессор вписывает схемы ошибок в OpenAPI — без него Swagger
-    #     показывает только успешные ответы.
-    # EN: the postprocessing hook writes error schemas into the OpenAPI
-    #     document — without it Swagger shows successful responses only.
+    # the postprocessing hook writes error schemas into the OpenAPI
+    # document — without it Swagger shows successful responses only.
     "POSTPROCESSING_HOOKS": [
         "drf_standardized_errors.openapi_hooks.postprocess_schema_enums"
     ],
-    # RU: без переопределений spectacular ругается на коллизии имён enum:
-    #     одинаковые наборы кодов встречаются в схеме много раз.
-    # EN: without the overrides spectacular warns about enum name collisions:
-    #     the same sets of codes appear in the schema many times.
+    # without the overrides spectacular warns about enum name collisions:
+    # the same sets of codes appear in the schema many times.
     "ENUM_NAME_OVERRIDES": {
         "ValidationErrorEnum": "drf_standardized_errors.openapi_serializers.ValidationErrorEnum.choices",
         "ClientErrorEnum": "drf_standardized_errors.openapi_serializers.ClientErrorEnum.choices",
@@ -224,22 +202,32 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ["DB_NAME"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"],
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "3306"),
-        "OPTIONS": {
-            # RU: строгий режим — MySQL вернёт ошибку вместо тихого обрезания данных
-            # EN: strict mode — MySQL raises an error instead of silently truncating data
-            "sql_mode": "STRICT_TRANS_TABLES",
-            "charset": "utf8mb4",
-        },
+# MySQL is the production database. DB_ENGINE=sqlite switches to a local
+# SQLite file, e.g. to run the test suite without a MySQL server; FULLTEXT
+# search then falls back to icontains.
+if os.getenv("DB_ENGINE", "mysql").lower() == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ["DB_NAME"],
+            "USER": os.environ["DB_USER"],
+            "PASSWORD": os.environ["DB_PASSWORD"],
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "3306"),
+            "OPTIONS": {
+                # strict mode — MySQL raises an error instead of silently truncating data
+                "sql_mode": "STRICT_TRANS_TABLES",
+                "charset": "utf8mb4",
+            },
+        }
+    }
 
 
 # Password validation
@@ -281,52 +269,48 @@ TIME_ZONE = "Europe/Berlin"
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"   # сюда соберёт collectstatic в Docker
+# collectstatic target, served by nginx in Docker
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# RU: за сколько дней до заезда ещё можно отменить бронь — читает
-#     Booking.is_cancellable(), чтобы правило не было зашито в код.
-# EN: how many days before check-in a booking may still be cancelled —
-#     read by Booking.is_cancellable() so the rule is not hard-coded.
+# how many days before check-in a booking may still be cancelled —
+# read by Booking.is_cancellable() so the rule is not hard-coded.
 BOOKING_CANCELLATION_DAYS = int(os.getenv("BOOKING_CANCELLATION_DAYS", "1"))
 
-# RU: сколько дней после публикации автор ещё может править отзыв —
-#     читает Review.is_editable(), правило не зашито в код.
-# EN: how many days after posting the author may still edit a review —
-#     read by Review.is_editable() so the rule is not hard-coded.
+# how many days after posting the author may still edit a review —
+# read by Review.is_editable() so the rule is not hard-coded.
 REVIEW_EDIT_WINDOW_DAYS = int(os.getenv("REVIEW_EDIT_WINDOW_DAYS", "14"))
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-# RU: EMAIL_BACKEND — строка с путём к классу, а не словарь, как DATABASES.
-# EN: EMAIL_BACKEND is a dotted path string, not a dict like DATABASES.
+# EMAIL_BACKEND is a dotted path string, not a dict like DATABASES.
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@booking.local")
 SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
 
-# RU: в тестах письма складываются в mail.outbox, а не печатаются
-# EN: in tests, emails go into mail.outbox instead of being printed
-if "test" in sys.argv:
+TESTING = "test" in sys.argv
+
+if TESTING:
+    # emails go into mail.outbox instead of being printed
     EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    # a fast hasher: the default PBKDF2 makes every created user cost ~0.5s
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 LOG_DIR = BASE_DIR / "logs"
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-# RU: в контейнере пишем только в stdout: файлы внутри контейнера исчезают
-#     вместе с ним, а сбором занимается платформа (Docker, потом CloudWatch).
-# EN: inside a container log to stdout only: files vanish with the container,
-#     and collection is the platform's job (Docker, later CloudWatch).
+# test runs stay quiet unless LOG_LEVEL is set explicitly
+LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING" if TESTING else "INFO").upper()
+# inside a container log to stdout only: files vanish with the container,
+# and log collection is the platform's job (Docker, CloudWatch).
 LOG_TO_FILE = env_bool("LOG_TO_FILE", not env_bool("IN_CONTAINER", False))
-# RU: SQL пишется ТОЛЬКО при DEBUG=True — Django оборачивает курсор
-#     в отладочный лишь в этом режиме.
-# EN: SQL is emitted ONLY with DEBUG=True — Django wraps the cursor into the
-#     debug one in that mode alone.
+# SQL is emitted ONLY with DEBUG=True — Django wraps the cursor into the
+# debug one in that mode alone.
 LOG_SQL = env_bool("LOG_SQL", False)
 QUERY_COUNT_WARNING = int(os.getenv("QUERY_COUNT_WARNING", "20"))
 
@@ -337,10 +321,8 @@ _handlers = ["console"] + (["file"] if LOG_TO_FILE else [])
 
 LOGGING = {
     "version": 1,
-    # RU: КРИТИЧНО. True отключил бы собственные логгеры Django и сторонних
-    #     библиотек — пропали бы сообщения runserver и трейсбеки.
-    # EN: CRITICAL. True would disable Django's own loggers and those of third
-    #     party packages — runserver messages and tracebacks would disappear.
+    # True would disable Django's own loggers and those of third-party
+    # packages — runserver messages and tracebacks would disappear.
     "disable_existing_loggers": False,
     "filters": {
         "request_id": {"()": "core.logging_context.RequestIdFilter"},
@@ -356,15 +338,13 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            # RU: фильтр на обработчике, а не на логгере — см. RequestIdFilter
-            # EN: the filter sits on the handler, not the logger — see RequestIdFilter
+            # the filter sits on the handler, not the logger — see RequestIdFilter
             "filters": ["request_id"],
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
             "filename": str(LOG_DIR / "app.log"),
-            # RU: ротация обязательна, иначе файл однажды забьёт диск
-            # EN: rotation is mandatory, otherwise the file eventually fills the disk
+            # rotation is mandatory, otherwise the file eventually fills the disk
             "maxBytes": 5 * 1024 * 1024,
             "backupCount": 5,
             "encoding": "utf-8",
@@ -384,8 +364,7 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
-        # RU: 4xx и 5xx с трейсбеками
-        # EN: 4xx and 5xx with tracebacks
+        # 4xx and 5xx with tracebacks
         "django.request": {
             "handlers": _handlers,
             "level": "WARNING",
@@ -396,8 +375,7 @@ LOGGING = {
             "level": "DEBUG" if (DEBUG and LOG_SQL) else "WARNING",
             "propagate": False,
         },
-        # RU: наши приложения: apps.* и core.*
-        # EN: our own applications: apps.* and core.*
+        # our own applications: apps.* and core.*
         "apps": {"handlers": _handlers, "level": LOG_LEVEL, "propagate": False},
         "core": {"handlers": _handlers, "level": LOG_LEVEL, "propagate": False},
     },

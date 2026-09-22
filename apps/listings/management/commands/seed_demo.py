@@ -1,7 +1,6 @@
 # apps/listings/management/commands/seed_demo.py
 """
-RU: Наполнение базы демонстрационными данными через Faker.
-EN: Populates the database with demo data using Faker.
+Populates the database with demo data using Faker.
 
     python manage.py seed_demo --flush
     python manage.py seed_demo --landlords 8 --tenants 25 --listings 40 --seed 42
@@ -31,17 +30,13 @@ from apps.listings.models import Listing, ListingPhoto, PropertyType
 from apps.reviews.models import Review
 from apps.users.models import User
 
-# RU: все демо-аккаунты живут на одном домене — только по нему --flush
-#     понимает, что можно удалять, и не трогает настоящих пользователей.
-# EN: every demo account lives on one domain — that is the only marker --flush
-#     uses to decide what may be deleted, so real users are never touched.
+# every demo account lives on one domain — that is the only marker --flush
+# uses to decide what may be deleted, so real users are never touched.
 DEMO_DOMAIN = "demo.local"
 DEMO_PASSWORD = "demo-pass-2024"
 
-# RU: города берём фиксированным списком, а не faker.city(): нужны реальные
-#     немецкие написания с умляутами, чтобы проверить city_normalized.
-# EN: a fixed city list rather than faker.city(): real German spellings with
-#     umlauts are needed to exercise city_normalized.
+# a fixed city list rather than faker.city(): real German spellings with
+# umlauts are needed to exercise city_normalized.
 CITIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Köln", ("Altstadt", "Ehrenfeld", "Nippes", "Sülz")),
     ("München", ("Schwabing", "Haidhausen", "Sendling")),
@@ -53,10 +48,8 @@ CITIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Leipzig", ("Plagwitz", "Südvorstadt")),
 )
 
-# RU: заголовок собирается по шаблону: faker.sentence() даёт бессмысленный
-#     текст, по которому не видно, работает ли поиск.
-# EN: titles are built from templates: faker.sentence() produces nonsense that
-#     makes it impossible to tell whether search works.
+# titles are built from templates: faker.sentence() produces nonsense that
+# makes it impossible to tell whether search works.
 TITLE_TEMPLATES = {
     "en": "{adj} {kind} with {feature} in {district}",
     "de": "{adj} {kind} mit {feature} in {district}",
@@ -120,22 +113,17 @@ SEARCH_NOISE = ("balcony", "garden", "zentrum", "studio", "cheap", "wifi", "park
 
 def _aware(day, hour: int = 12) -> datetime:
     """
-    RU: Дата в осознанный datetime текущей таймзоны — USE_TZ=True, наивное
-        значение вызвало бы RuntimeWarning и ушло бы в базу как UTC.
-    EN: A date into an aware datetime in the current timezone — with USE_TZ=True
-        a naive value raises a RuntimeWarning and lands in the database as UTC.
+    A date into an aware datetime in the current timezone — with USE_TZ=True
+    a naive value raises a RuntimeWarning and lands in the database as UTC.
     """
     return timezone.make_aware(datetime.combine(day, time(hour=hour)))
 
 
 class Command(BaseCommand):
     """
-    RU: Создаёт связный набор демо-данных: пользователи в группах, объявления
-        с переводами и фото, брони по всей ленте статусов, отзывы на
-        завершённые брони и аналитика.
-    EN: Creates a coherent demo dataset: users in groups, listings with
-        translations and photos, bookings across the whole status timeline,
-        reviews on completed bookings, and analytics rows.
+    Creates a coherent demo dataset: users in groups, listings with
+    translations and photos, bookings across the whole status timeline,
+    reviews on completed bookings, and analytics rows.
     """
 
     help = "Populate the database with Faker-generated demo data"
@@ -160,13 +148,10 @@ class Command(BaseCommand):
             "--no-photos", action="store_true",
             help="Skip image generation (faster, writes no files to MEDIA_ROOT)",
         )
-        # RU: языки демо-пользователей задаются параметром, чтобы не править
-        #     профили в shell после каждого пересоздания базы. Письма о брони
-        #     уходят на языке получателя, и разные языки видно сразу.
-        # EN: demo users' languages come from an argument, so profiles need no
-        #     manual fixing in the shell after every database recreation.
-        #     Booking emails go out in the recipient's language, so the
-        #     difference is visible immediately.
+        # demo users' languages come from an argument, so profiles need no
+        # manual fixing in the shell after every database recreation.
+        # Booking emails go out in the recipient's language, so the
+        # difference is visible immediately.
         parser.add_argument(
             "--languages", default="en,de,ru",
             help="Comma-separated language codes spread round-robin across demo users",
@@ -174,8 +159,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
-        # RU: seed на оба генератора — иначе повтор запуска даст другую базу
-        # EN: seed both generators — otherwise a rerun yields a different database
+        # seed both generators — otherwise a rerun yields a different database
         self.rng = random.Random(options["seed"])
         self.fake = Faker("de_DE")
         Faker.seed(options["seed"])
@@ -185,14 +169,12 @@ class Command(BaseCommand):
         if options["flush"]:
             self._flush()
 
-        # RU: группы и курсы валют — предпосылки, а не данные. Без курсов
-        #     price_base считается по пустой таблице Rate и молча остаётся
-        #     в исходной валюте.
-        # EN: groups and exchange rates are preconditions, not data. Without the
-        #     rates, price_base is computed against an empty Rate table and
-        #     silently stays in the original currency.
+        # groups and exchange rates are preconditions, not data. Without the
+        # rates, price_base is computed against an empty Rate table and
+        # silently stays in the original currency.
         call_command("init_groups", verbosity=0)
-        call_command("update_rates", verbosity=0)
+        # update_rates prints its result regardless of verbosity
+        call_command("update_rates", verbosity=0, stdout=io.StringIO())
 
         landlords = self._create_users(options["landlords"], "landlords")
         tenants = self._create_users(options["tenants"], "tenants")
@@ -213,16 +195,11 @@ class Command(BaseCommand):
 
     def _language_cycle(self, raw: str):
         """
-        RU: Проверяет коды по settings.LANGUAGES и возвращает бесконечный
-            итератор. Проверка нужна потому, что User.language объявлен с
-            choices, а они срабатывают только в full_clean(); get_or_create
-            его не вызывает, и опечатка вроде "du" записалась бы молча,
-            а упала бы позже — внутри override() при отправке письма.
-        EN: Validates the codes against settings.LANGUAGES and returns an
-            endless iterator. The check matters because User.language declares
-            choices, and those only apply in full_clean(); get_or_create never
-            calls it, so a typo such as "du" would be stored silently and fail
-            later — inside override() when an email is sent.
+        Validates the codes against settings.LANGUAGES and returns an
+        endless iterator. The check matters because User.language declares
+        choices, and those only apply in full_clean(); get_or_create never
+        calls it, so a typo such as "du" would be stored silently and fail
+        later — inside override() when an email is sent.
         """
         codes = [code.strip() for code in raw.split(",") if code.strip()]
         if not codes:
@@ -236,66 +213,62 @@ class Command(BaseCommand):
                 f"Available: {', '.join(sorted(known))}"
             )
 
-        # RU: cycle раздаёт языки по кругу: landlord1 -> en, landlord2 -> de,
-        #     landlord3 -> ru, landlord4 -> en. Арендаторы продолжают ту же
-        #     последовательность, поэтому стороны брони почти всегда
-        #     оказываются на разных языках.
-        # EN: cycle hands out languages round-robin: landlord1 -> en,
-        #     landlord2 -> de, landlord3 -> ru, landlord4 -> en. Tenants
-        #     continue the same sequence, so the two parties of a booking
-        #     almost always end up in different languages.
+        # cycle hands out languages round-robin: landlord1 -> en,
+        # landlord2 -> de, landlord3 -> ru, landlord4 -> en. Tenants
+        # continue the same sequence, so the two parties of a booking
+        # almost always end up in different languages.
         return cycle(codes)
 
     # ------------------------------------------------------------------ flush
 
     def _flush(self) -> None:
         """
-        RU: Удаляет демо-данные в порядке, обратном зависимостям: почти все
-            связи объявлены PROTECT, поэтому произвольный порядок упадёт.
-            Используется all_objects — менеджер по умолчанию скрывает мягко
-            удалённые строки, и они пережили бы очистку.
-        EN: Deletes demo data in reverse dependency order: almost every relation
-            is PROTECT, so an arbitrary order fails. all_objects is used because
-            the default manager hides soft-deleted rows, which would otherwise
-            survive the cleanup.
+        Deletes demo data in reverse dependency order: almost every relation
+        is PROTECT, so an arbitrary order fails. all_objects is used because
+        the default manager hides soft-deleted rows, which would otherwise
+        survive the cleanup.
         """
         users = User.objects.filter(email__endswith=f"@{DEMO_DOMAIN}")
         listings = Listing.all_objects.filter(owner__in=users)
+        reviews = Review.all_objects.filter(listing__in=listings)
+        bookings = Booking.objects.filter(listing__in=listings)
 
-        Review.all_objects.filter(listing__in=listings).delete()
+        # simple-history keeps its own tables with no FK to the originals —
+        # a cascade misses them, so clear them explicitly once the rows are
+        # gone (each delete writes one more history record). They are
+        # matched by id: history_user is empty for rows written outside a
+        # request, which is how the seeder writes them.
+        history = {
+            Listing: list(listings.values_list("id", flat=True)),
+            Booking: list(bookings.values_list("id", flat=True)),
+            Review: list(reviews.values_list("id", flat=True)),
+        }
+
+        reviews.delete()
         ListingView.objects.filter(listing__in=listings).delete()
         ListingStats.objects.filter(listing__in=listings).delete()
         SearchQuery.objects.filter(user__in=users).delete()
-        Booking.objects.filter(listing__in=listings).delete()
+        bookings.delete()
         ListingPhoto.objects.filter(listing__in=listings).delete()
-
-        # RU: simple-history держит свои таблицы без FK на объявление —
-        #     каскад их не заденет, чистим явно.
-        # EN: simple-history keeps its own tables with no FK to the listing —
-        #     a cascade misses them, so clear them explicitly.
-        for model in (Listing, Booking, Review):
-            model.history.model.objects.filter(history_user__in=users).delete()
-
         removed = listings.delete()[0] + users.delete()[0]
+
+        for model, ids in history.items():
+            model.history.model.objects.filter(id__in=ids).delete()
         self.stdout.write(self.style.WARNING(f"flushed: {removed} rows"))
 
     # ------------------------------------------------------------------ users
 
     def _create_users(self, count: int, group_name: str) -> list[User]:
         """
-        RU: Создаёт пользователей и раскладывает по ролевым группам.
-            Пароль одинаковый — это демо-данные, не боевые аккаунты.
-        EN: Creates users and assigns them to role groups. The password is
-            shared: this is demo data, not real accounts.
+        Creates users and assigns them to role groups. The password is
+        shared: this is demo data, not real accounts.
         """
         group = Group.objects.get(name=group_name)
         users: list[User] = []
 
         for index in range(count):
-            # RU: индекс в адресе гарантирует уникальность — имена faker
-            #     повторяются, а email в модели unique.
-            # EN: the index guarantees uniqueness — faker repeats names while
-            #     the model declares email unique.
+            # the index guarantees uniqueness — faker repeats names while
+            # the model declares email unique.
             email = f"{group_name[:-1]}{index + 1}@{DEMO_DOMAIN}"
             language = next(self.language_cycle)
             user, created = User.objects.get_or_create(
@@ -311,12 +284,9 @@ class Command(BaseCommand):
                 user.set_password(DEMO_PASSWORD)
                 user.save(update_fields=["password"])
             else:
-                # RU: get_or_create не трогает существующие строки, поэтому
-                #     язык обновляем явно — иначе повторный запуск с другим
-                #     --languages ничего бы не изменил.
-                # EN: get_or_create leaves existing rows untouched, so the
-                #     language is updated explicitly — otherwise a rerun with a
-                #     different --languages would change nothing.
+                # get_or_create leaves existing rows untouched, so the
+                # language is updated explicitly — otherwise a rerun with a
+                # different --languages would change nothing.
                 user.language = language
                 user.save(update_fields=["language"])
             user.groups.add(group)
@@ -329,12 +299,9 @@ class Command(BaseCommand):
 
     def _create_listings(self, count: int, landlords: list[User]) -> list[Listing]:
         """
-        RU: Объявления сразу на трёх языках. Поля title_en/de/ru пишутся явно:
-            присваивание в title попадает только в колонку активного языка,
-            а FULLTEXT-поиск ищет по колонке языка запроса.
-        EN: Listings in all three languages at once. title_en/de/ru are written
-            explicitly: assigning to title fills only the active language's
-            column, while FULLTEXT search queries the request language's column.
+        Listings in all three languages at once. title_en/de/ru are written
+        explicitly: assigning to title fills only the active language's
+        column, while FULLTEXT search queries the request language's column.
         """
         listings: list[Listing] = []
 
@@ -344,12 +311,9 @@ class Command(BaseCommand):
             property_type = self.rng.choice(PropertyType.values)
             rooms = 1 if property_type == PropertyType.STUDIO else self.rng.randint(1, 5)
 
-            # RU: 80% в EUR — иначе выборка «дешевле 100 EUR» перестанет быть
-            #     показательной. Остальные валюты нужны, чтобы было видно
-            #     работу price_base и замороженного курса.
-            # EN: 80% in EUR — otherwise a "cheaper than 100 EUR" query stops
-            #     being representative. The other currencies are there to show
-            #     price_base and the frozen rate at work.
+            # 80% in EUR — otherwise a "cheaper than 100 EUR" query stops
+            # being representative. The other currencies are there to show
+            # price_base and the frozen rate at work.
             currency = "EUR" if self.rng.random() < 0.8 else self.rng.choice(
                 [c for c in settings.CURRENCIES if c != "EUR"]
             )
@@ -364,8 +328,7 @@ class Command(BaseCommand):
                 price_per_night=Money(amount, currency),
                 rooms=rooms,
                 property_type=property_type,
-                # RU: часть объявлений снята с публикации — выдача должна их скрыть
-                # EN: some listings are unpublished — the feed must hide them
+                # some listings are unpublished — the feed must hide them
                 is_active=self.rng.random() > 0.12,
                 created_at=timezone.now() - timedelta(days=self.rng.randint(1, 400)),
             )
@@ -374,10 +337,8 @@ class Command(BaseCommand):
                 setattr(listing, f"title_{lang}", title)
                 setattr(listing, f"description_{lang}", description)
 
-            # RU: full_clean() внутри ValidatedModel.save() отрабатывает так же,
-            #     как на живом запросе — сид проверяет модель, а не обходит её.
-            # EN: full_clean() inside ValidatedModel.save() runs exactly as on a
-            #     live request — the seeder exercises the model, not bypasses it.
+            # full_clean() inside ValidatedModel.save() runs exactly as on a
+            # live request — the seeder exercises the model, not bypasses it.
             listing.save()
             listings.append(listing)
 
@@ -386,8 +347,7 @@ class Command(BaseCommand):
 
     def _text(self, lang: str, property_type: str, district: str, rooms: int) -> tuple[str, str]:
         """
-        RU: Заголовок и описание на одном языке.
-        EN: Title and description in a single language.
+        Title and description in a single language.
         """
         words = WORDS[lang]
         title = TITLE_TEMPLATES[lang].format(
@@ -410,12 +370,9 @@ class Command(BaseCommand):
 
     def _create_photos(self, listings: list[Listing]) -> int:
         """
-        RU: Генерирует картинки через Pillow вместо копирования файлов:
-            фикстура остаётся самодостаточной, репозиторий не тащит бинарники.
-            position кратен 10 — тот же шаг, что в services.reorder_photos.
-        EN: Generates images with Pillow instead of shipping files: the fixture
-            stays self-contained and the repository carries no binaries.
-            position is a multiple of 10 — the same step as services.reorder_photos.
+        Generates images with Pillow instead of shipping files: the fixture
+        stays self-contained and the repository carries no binaries.
+        position is a multiple of 10 — the same step as services.reorder_photos.
         """
         from PIL import Image, ImageDraw
 
@@ -443,10 +400,8 @@ class Command(BaseCommand):
                     caption_ru=f"Вид {index + 1}",
                     position=(index + 1) * 10,
                 )
-                # RU: save=False — строки ещё нет, имя файла собирает
-                #     listing_photo_path из listing_id и UUID.
-                # EN: save=False — the row does not exist yet; the filename is
-                #     built by listing_photo_path from listing_id and a UUID.
+                # save=False — the row does not exist yet; the filename is
+                # built by listing_photo_path from listing_id and a UUID.
                 photo.image.save(
                     f"demo_{index + 1}.jpg", ContentFile(buffer.getvalue()), save=False
                 )
@@ -462,31 +417,24 @@ class Command(BaseCommand):
         self, listings: list[Listing], tenants: list[User], per_listing: int
     ) -> list[Booking]:
         """
-        RU: Брони раскладываются по одной временной оси на объявление, курсор
-            идёт из прошлого в будущее — так интервалы гарантированно не
-            пересекаются и проверка занятых дат ничего не отклонит.
-        EN: Bookings are laid out on one timeline per listing, the cursor moving
-            from past to future — so the intervals provably never overlap and
-            the "dates taken" check rejects nothing.
+        Bookings are laid out on one timeline per listing, the cursor moving
+        from past to future — so the intervals provably never overlap and
+        the "dates taken" check rejects nothing.
         """
         today = timezone.localdate()
         bookings: list[Booking] = []
 
         for listing in listings:
-            # RU: владелец не может снять собственное жильё — это правило
-            #     validate_not_own_listing, и данные обязаны ему следовать.
-            # EN: an owner cannot book their own property — the rule of
-            #     validate_not_own_listing, and the data must obey it.
+            # an owner cannot book their own property — the rule of
+            # validate_not_own_listing, and the data must obey it.
             candidates = [t for t in tenants if t.pk != listing.owner_id]
             if not candidates:
                 continue
             cursor = today - timedelta(days=self.rng.randint(150, 240))
             count = self.rng.randint(1, per_listing)
-            # RU: часть броней обязана лежать в будущем, иначе не появятся
-            #     статусы pending и confirmed: _status_for выводит их из дат.
-            # EN: some bookings must lie in the future, otherwise the pending
-            #     and confirmed statuses never appear: _status_for derives them
-            #     from the dates.
+            # some bookings must lie in the future, otherwise the pending
+            # and confirmed statuses never appear: _status_for derives them
+            # from the dates.
             first_future = self.rng.randint(0, count - 1)
 
             for index in range(count):
@@ -512,11 +460,9 @@ class Command(BaseCommand):
 
     def _status_for(self, start, end, today) -> str:
         """
-        RU: Статус выводится из дат, а не выбирается случайно: завершённая
-            бронь в будущем сломала бы и конечный автомат, и отзывы.
-        EN: The status is derived from the dates rather than picked at random:
-            a completed booking in the future would break both the state
-            machine and the reviews.
+        The status is derived from the dates rather than picked at random:
+        a completed booking in the future would break both the state
+        machine and the reviews.
         """
         if end <= today:
             roll = self.rng.random()
@@ -531,14 +477,10 @@ class Command(BaseCommand):
 
     def _make_booking(self, *, listing, tenant, start, end, status: str) -> Booking:
         """
-        RU: Снимки цены, курса и заголовка повторяют services.create_booking().
-            Сохранение идёт со skip_validation: clean() запрещает заводить
-            бронь задним числом, а исторические данные нужны именно такими —
-            без них не будет ни завершённых броней, ни отзывов.
-        EN: The price, rate and title snapshots mirror services.create_booking().
-            The save uses skip_validation: clean() forbids creating a booking in
-            the past, yet those historical rows are exactly what is needed —
-            without them there are neither completed bookings nor reviews.
+        The price, rate and title snapshots mirror services.create_booking().
+        The save uses skip_validation: clean() forbids creating a booking in
+        the past, yet those historical rows are exactly what is needed —
+        without them there are neither completed bookings nor reviews.
         """
         booking = Booking(
             listing=listing,
@@ -554,10 +496,8 @@ class Command(BaseCommand):
         )
         booking.total_price = booking.calculate_total()
 
-        # RU: курс замораживается вместе с суммой — ровно как в сервисе,
-        #     иначе отчёты по выручке разъедутся с боевыми данными.
-        # EN: the rate is frozen together with the amount, exactly as in the
-        #     service — otherwise revenue reports diverge from real data.
+        # the rate is frozen together with the amount, exactly as in the
+        # service — otherwise revenue reports diverge from real data.
         base_amount = Listing._to_base_currency(booking.total_price)
         booking.total_price_base = base_amount
         booking.exchange_rate = (
@@ -582,17 +522,14 @@ class Command(BaseCommand):
 
     def _create_reviews(self, bookings: list[Booking]) -> int:
         """
-        RU: Отзыв только на завершённую бронь — Review.clean() другого не
-            пропустит, и это правило проверяется здесь по-настоящему.
-        EN: A review only on a completed booking — Review.clean() allows nothing
-            else, and the rule is genuinely exercised here.
+        A review only on a completed booking — Review.clean() allows nothing
+        else, and the rule is genuinely exercised here.
         """
         created = 0
         for booking in bookings:
             if booking.status != BookingStatus.COMPLETED or self.rng.random() > 0.65:
                 continue
-            # RU: перекос к хорошим оценкам — так выглядит реальная выборка
-            # EN: skewed towards good ratings — that is what real data looks like
+            # skewed towards good ratings — that is what real data looks like
             rating = self.rng.choices((5, 4, 3, 2, 1), weights=(45, 28, 15, 8, 4))[0]
             Review(
                 booking=booking,
@@ -609,14 +546,10 @@ class Command(BaseCommand):
 
     def _create_analytics(self, listings: list[Listing], tenants: list[User]) -> int:
         """
-        RU: Просмотры пишутся по дням — уникальность (listing, user,
-            session_key, viewed_on) не даст двух записей за сутки, поэтому
-            дубли отсеиваются до вставки. Счётчик ListingStats заполняется
-            готовым числом, а не инкрементом на каждый просмотр.
-        EN: Views are recorded per day — the (listing, user, session_key,
-            viewed_on) uniqueness forbids two rows on one day, so duplicates are
-            filtered out before insertion. The ListingStats counter is written
-            as a final number rather than incremented per view.
+        Views are recorded per day — the (listing, user, session_key,
+        viewed_on) uniqueness forbids two rows on one day, so duplicates are
+        filtered out before insertion. The ListingStats counter is written
+        as a final number rather than incremented per view.
         """
         today = timezone.localdate()
         stats: list[ListingStats] = []
@@ -628,10 +561,8 @@ class Command(BaseCommand):
 
             for _ in range(self.rng.randint(0, 40)):
                 day = today - timedelta(days=self.rng.randint(0, 90))
-                # RU: треть просмотров анонимные — дедуплицируются по session_key,
-                #     потому что в MySQL NULL != NULL и user тут не ключ.
-                # EN: a third of the views are anonymous — de-duplicated by
-                #     session_key, since in MySQL NULL != NULL and user is no key.
+                # a third of the views are anonymous — de-duplicated by
+                # session_key, since in MySQL NULL != NULL and user is no key.
                 if self.rng.random() < 0.35:
                     user_id, session = None, self.fake.sha1()[:32]
                 else:
@@ -666,8 +597,7 @@ class Command(BaseCommand):
         queries = [
             SearchQuery(
                 user=self.rng.choice(tenants) if self.rng.random() < 0.7 else None,
-                # RU: нормализованный вид — так же, как пишет ListingViewSet.list
-                # EN: the normalised form, exactly as ListingViewSet.list writes it
+                # the normalised form, exactly as ListingViewSet.list writes it
                 keyword=self.rng.choice(keywords),
                 results_count=self.rng.randint(0, 40),
                 created_at=timezone.now() - timedelta(hours=self.rng.randint(1, 2000)),
@@ -698,8 +628,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  reviews   : {reviews}")
         self.stdout.write(f"  views     : {views}")
 
-        # RU: раскладка по языкам — сразу видно, на ком проверять письма
-        # EN: the language breakdown shows at a glance whom to test emails with
+        # the language breakdown shows at a glance whom to test emails with
         by_language: dict[str, list[str]] = {}
         for user in landlords + tenants:
             by_language.setdefault(user.language, []).append(user.email)

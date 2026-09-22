@@ -11,8 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 class BookingReadSerializer(serializers.ModelSerializer):
     """
-    RU: Представление брони для владельца и арендатора.
-    EN: Booking representation for both the landlord and the tenant.
+    Booking representation for both the landlord and the tenant.
     """
 
     listing_public_id = serializers.UUIDField(source="listing.public_id", read_only=True)
@@ -30,20 +29,16 @@ class BookingReadSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.IntegerField())
     def get_nights(self, obj: Booking) -> int:
         """
-        RU: Число ночей. Считается в Python из уже загруженных полей,
-            дополнительного запроса не делает.
-        EN: Number of nights. Computed in Python from already-loaded fields,
-            so it costs no extra query.
+        Number of nights. Computed in Python from already-loaded fields,
+        so it costs no extra query.
         """
         return obj.nights
 
 
 class BookingCreateSerializer(serializers.Serializer):
     """
-    RU: Создание брони. Не ModelSerializer: снимки цены и заголовка
-        считает сервис, клиент их передать не должен.
-    EN: Booking creation. Not a ModelSerializer: the price and title snapshots
-        are computed by the service and must not come from the client.
+    Booking creation. Not a ModelSerializer: the price and title snapshots
+    are computed by the service and must not come from the client.
     """
 
     listing = serializers.SlugRelatedField(
@@ -63,10 +58,8 @@ class BookingCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data: dict) -> Booking:
         """
-        RU: Делегирует сервису — там транзакция и select_for_update,
-            защищающие от гонки за одни и те же даты.
-        EN: Delegates to the service, where a transaction and select_for_update
-            guard against a race for the same dates.
+        Delegates to the service, where a transaction and select_for_update
+        guard against a race for the same dates.
         """
         return create_booking(
             tenant=self.context["request"].user,
@@ -79,10 +72,8 @@ class BookingCreateSerializer(serializers.Serializer):
 
 class BookingStatusSerializer(serializers.Serializer):
     """
-    RU: Смена статуса через явное действие, а не через PATCH поля.
-        Так право проверяется отдельно для каждого перехода.
-    EN: Status change as an explicit action rather than a field PATCH,
-        so each transition can be permission-checked separately.
+    Status change as an explicit action rather than a field PATCH,
+    so each transition can be permission-checked separately.
     """
 
     status = serializers.ChoiceField(

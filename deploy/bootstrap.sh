@@ -1,19 +1,14 @@
 #!/bin/bash
 set -e
 
-# RU: -y обязателен: без него dnf ждёт подтверждения, а в user-data
-#     подтверждать некому — скрипт зависает навсегда.
-# EN: -y is mandatory: without it dnf waits for confirmation, and in user-data
-#     there is nobody to confirm — the script hangs forever.
+# -y is mandatory: without it dnf waits for confirmation, and in user-data
+# there is nobody to confirm — the script hangs forever.
 dnf update -y
 dnf install -y docker git
 
-# RU: t3.micro имеет 1 ГБ памяти. Сборка компилирует mysqlclient и Pillow,
-#     и OOM killer прибивает процесс с загадочным "Killed" без объяснений.
-#     Гигабайт swap это лечит.
-# EN: a t3.micro has 1 GB of RAM. The build compiles mysqlclient and Pillow,
-#     and the OOM killer takes the process down with a cryptic "Killed" and no
-#     explanation. One gigabyte of swap fixes it.
+# a t3.micro has 1 GB of RAM. The build compiles mysqlclient and Pillow,
+# and the OOM killer takes the process down with a cryptic "Killed" and no
+# explanation. One gigabyte of swap fixes it.
 if [ ! -f /swapfile ]; then
     dd if=/dev/zero of=/swapfile bs=1M count=1024
     chmod 600 /swapfile
@@ -25,23 +20,31 @@ fi
 systemctl enable --now docker
 usermod -aG docker ec2-user
 
-# RU: в исходном скрипте ставился buildx, но НЕ плагин compose — а потом
-#     вызывался docker-compose, которого нет. Скрипт падал на последней строке.
-#     Плагин ставится в каталог CLI-плагинов и даёт команду "docker compose".
-# EN: the original script installed buildx but NOT the compose plugin, then
-#     called docker-compose, which does not exist. It failed on its last line.
-#     The plugin goes into the CLI plugins directory and provides "docker compose".
 PLUGIN_DIR=/usr/local/lib/docker/cli-plugins
 mkdir -p "$PLUGIN_DIR"
 
-# RU: архитектура определяется, а не зашивается: t3.micro это x86_64,
-#     а t4g.micro на Graviton — aarch64, и amd64-бинарник там не запустится.
-# EN: the architecture is detected rather than hard-coded: a t3.micro is x86_64
-#     while a Graviton t4g.micro is aarch64, where an amd64 binary will not run.
+# the architecture is detected rather than hard-coded: a t3.micro is x86_64
+# while a Graviton t4g.micro is aarch64, where an amd64 binary will not run.
+# Compose names its assets after uname (x86_64/aarch64), Buildx after Go
+# (amd64/arm64) — hence two variables.
 ARCH=$(uname -m)
-sudo curl -SL "https://github.com/docker/buildx/releases/download/v0.25.0/buildx-v0.25.0.linux-${BX_ARCH}" \
+case "$ARCH" in
+    x86_64)  BX_ARCH=amd64 ;;
+    aarch64) BX_ARCH=arm64 ;;
+    *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;;
+esac
+
+# -f makes curl fail on HTTP errors. Without it a 404 page is saved as the
+# "binary" and the plugin silently does not work.
+curl -fSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}" \
+     -o "$PLUGIN_DIR/docker-compose"
+chmod +x "$PLUGIN_DIR/docker-compose"
+
+# Compose needs Buildx >= 0.17 to build images. Buildx has no stable
+# "latest/download" asset name, so the version is pinned.
+curl -fSL "https://github.com/docker/buildx/releases/download/v0.25.0/buildx-v0.25.0.linux-${BX_ARCH}" \
      -o "$PLUGIN_DIR/docker-buildx"
-sudo chmod +x "$PLUGIN_DIR/docker-buildx"
+chmod +x "$PLUGIN_DIR/docker-buildx"
 
 systemctl restart docker
 

@@ -10,16 +10,14 @@ from django.conf import settings
 
 class UserManager(BaseUserManager):
     """
-    RU: Менеджер пользователей с логином по email вместо username.
-    EN: User manager using email as the login field instead of username.
+    User manager using email as the login field instead of username.
     """
 
     use_in_migrations = True
 
     def _create_user(self, email: str, password: str | None, **extra_fields) -> "User":
         """
-        RU: Общая логика создания пользователя с нормализацией email.
-        EN: Shared user creation logic with email normalisation.
+        Shared user creation logic with email normalisation.
         """
         if not email:
             raise ValueError("Email is required")
@@ -30,10 +28,8 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email: str, password: str | None = None, **extra_fields) -> "User":
         """
-        RU: Создаёт обычного пользователя. Права выдаются добавлением в группу,
-            а не полем модели.
-        EN: Creates a regular user. Permissions come from group membership,
-            not from a model field.
+        Creates a regular user. Permissions come from group membership,
+        not from a model field.
         """
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
@@ -41,8 +37,7 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email: str, password: str | None = None, **extra_fields) -> "User":
         """
-        RU: Создаёт суперпользователя для админки.
-        EN: Creates a superuser for the admin site.
+        Creates a superuser for the admin site.
         """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -53,18 +48,14 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser, TimeStampedModel, PublicIdModel):
     """
-    RU: Пользователь системы. Роли не хранятся в модели — они выражены
-        членством в группах Django, чтобы источник истины был один.
-    EN: Application user. Roles are not stored on the model — they are
-        expressed through Django group membership, keeping one source of truth.
+    Application user. Roles are not stored on the model — they are
+    expressed through Django group membership, keeping one source of truth.
     """
 
-    # RU: username убран — идентификатором служит email.
-    # EN: username removed — email is the identifier.
+    # username removed — email is the identifier.
     username = None
     email = models.EmailField(_("email"), unique=True)
-    # RU: для строковых полей используем blank="" вместо null.
-    # EN: for string fields prefer blank="" over null.
+    # for string fields prefer blank="" over null.
     phone = models.CharField(_("Phone"), max_length=32, blank=True)
 
     language = models.CharField(

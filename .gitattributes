@@ -1,9 +1,6 @@
-# RU: скрипты для Linux-контейнера всегда с LF, независимо от настроек Git
-#     на машине разработчика. Иначе shebang превращается в "#!/bin/sh\r"
-#     и контейнер падает с "no such file or directory".
-# EN: scripts for the Linux container always use LF, regardless of the
-#     developer's Git settings. Otherwise the shebang becomes "#!/bin/sh\r"
-#     and the container fails with "no such file or directory".
+# scripts for the Linux container always use LF, regardless of the
+# developer's Git settings. Otherwise the shebang becomes "#!/bin/sh\r"
+# and the container fails with "no such file or directory".
 *.sh text eol=lf
 entrypoint.sh text eol=lf
 Dockerfile text eol=lf

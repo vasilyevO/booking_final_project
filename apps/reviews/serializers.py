@@ -9,8 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 class ReviewReadSerializer(serializers.ModelSerializer):
     """
-    RU: Отзыв в списке объявления.
-    EN: A review as shown on a listing.
+    A review as shown on a listing.
     """
 
     author_email = serializers.EmailField(source="author.email", read_only=True)
@@ -22,10 +21,8 @@ class ReviewReadSerializer(serializers.ModelSerializer):
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
     """
-    RU: Создание отзыва. Объявление и автор берутся из брони, поэтому
-        в запросе их нет.
-    EN: Review creation. The listing and the author are derived from the
-        booking, so they are absent from the request.
+    Review creation. The listing and the author are derived from the
+    booking, so they are absent from the request.
     """
 
     booking = serializers.SlugRelatedField(
@@ -41,10 +38,8 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
     def validate_booking(self, booking: Booking) -> Booking:
         """
-        RU: Проверка принадлежности — это право доступа, а не инвариант данных,
-            поэтому она живёт здесь, а не в Review.clean().
-        EN: Ownership is an access rule rather than a data invariant, so it
-            belongs here and not in Review.clean().
+        Ownership is an access rule rather than a data invariant, so it
+        belongs here and not in Review.clean().
         """
         if booking.tenant_id != self.context["request"].user.pk:
             raise serializers.ValidationError(_("You can only review your own stay"))
@@ -52,7 +47,16 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(_("This booking already has a review"))
         return booking
 
-    # RU: «бронь завершена» и «проживание закончилось» проверяет Review.clean()
-    #     через full_clean() в ValidatedModel.save() — здесь не дублируем.
-    # EN: "booking completed" and "stay finished" are checked by Review.clean()
-    #     via full_clean() in ValidatedModel.save() — not duplicated here.
+    # "booking completed" and "stay finished" are checked by Review.clean()
+    # via full_clean() in ValidatedModel.save() — not duplicated here.
+
+class ReviewUpdateSerializer(serializers.ModelSerializer):
+    """
+    Review editing. Only the rating and the text may change: the booking,
+    and with it the listing and the author, are fixed once the review exists.
+    """
+
+    class Meta:
+        model = Review
+        fields = ("id", "rating", "text")
+        read_only_fields = ("id",)

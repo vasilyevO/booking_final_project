@@ -20,8 +20,7 @@ from core.validators import validate_not_own_listing
 
 class BookingStatus(models.TextChoices):
     """
-    RU: Статусы жизненного цикла бронирования.
-    EN: Booking lifecycle statuses.
+    Booking lifecycle statuses.
     """
 
     PENDING = "pending", _("Pending")
@@ -31,12 +30,10 @@ class BookingStatus(models.TextChoices):
     COMPLETED = "completed", _("Completed")
 
 
-# RU: статусы, при которых даты считаются занятыми.
-# EN: statuses in which the dates are treated as occupied.
+# statuses in which the dates are treated as occupied.
 BLOCKING_STATUSES: tuple[str, ...] = (BookingStatus.PENDING, BookingStatus.CONFIRMED)
 
-# RU: разрешённые переходы конечного автомата статусов.
-# EN: allowed transitions of the status state machine.
+# allowed transitions of the status state machine.
 STATUS_TRANSITIONS: dict[str, set[str]] = {
     BookingStatus.PENDING: {
         BookingStatus.CONFIRMED,
@@ -52,23 +49,19 @@ STATUS_TRANSITIONS: dict[str, set[str]] = {
 
 class BookingQuerySet(models.QuerySet):
     """
-    RU: Переиспользуемые выборки бронирований.
-    EN: Reusable booking queries.
+    Reusable booking queries.
     """
 
     def blocking(self) -> "BookingQuerySet":
         """
-        RU: Брони, занимающие даты.
-        EN: Bookings that occupy dates.
+        Bookings that occupy dates.
         """
         return self.filter(status__in=BLOCKING_STATUSES)
 
     def overlapping(self, listing, start_date: date, end_date: date) -> "BookingQuerySet":
         """
-        RU: Пересекающиеся брони. Интервалы [a, b) и [c, d) пересекаются
-            тогда и только тогда, когда a < d и c < b.
-        EN: Overlapping bookings. Intervals [a, b) and [c, d) overlap
-            if and only if a < d and c < b.
+        Overlapping bookings. Intervals [a, b) and [c, d) overlap
+        if and only if a < d and c < b.
         """
         return self.blocking().filter(
             listing=listing,
@@ -78,22 +71,18 @@ class BookingQuerySet(models.QuerySet):
 
     def upcoming(self) -> "BookingQuerySet":
         """
-        RU: Брони, не завершившиеся на сегодня.
-        EN: Bookings that have not ended as of today.
+        Bookings that have not ended as of today.
         """
         return self.filter(end_date__gte=timezone.localdate())
 
 
 class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     """
-    RU: Бронирование жилья на интервал [start_date, end_date),
-        где день выезда не входит в занятый период.
-    EN: A property booking over the interval [start_date, end_date),
-        where the check-out day is not part of the occupied period.
+    A property booking over the interval [start_date, end_date),
+    where the check-out day is not part of the occupied period.
     """
 
-    # RU: PROTECT — страховка от физического удаления объявления с бронями.
-    # EN: PROTECT guards against physically deleting a listing that has bookings.
+    # PROTECT guards against physically deleting a listing that has bookings.
     listing = models.ForeignKey(
         "listings.Listing",
         on_delete=models.PROTECT,
@@ -115,10 +104,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     )
     guests = models.PositiveSmallIntegerField(
         default=1,
-        # RU: валидатора не было — ноль проходил full_clean() и падал уже
-        #     на CHECK в БД, отдавая клиенту 500 вместо 400.
-        # EN: the validator was missing — zero passed full_clean() and failed on
-        #     the database CHECK, returning 500 to the client instead of 400.
+        # validators reject out-of-range values in full_clean() with a 400,
+        # before the database CHECK would turn them into a 500.
         validators=[MinValueValidator(1), MaxValueValidator(20)],
         error_messages={
             "invalid": _("The number of guests must be a whole number."),
@@ -135,10 +122,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         help_text=_("Lifecycle status. Changed only through the booking actions"),
     )
 
-    # RU: снимки на момент бронирования — цена и заголовок объявления
-    #     могут измениться, а объявление может быть удалено.
-    # EN: snapshots taken at booking time — the listing price and title
-    #     may change, and the listing may be removed altogether.
+    # snapshots taken at booking time — the listing price and title
+    # may change, and the listing may be removed altogether.
 
     discount_percent = models.PositiveSmallIntegerField(
         default=0,
@@ -156,12 +141,9 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         verbose_name=_("Total"),
         help_text=_("Agreed contract amount, frozen at booking time"),
     )
-    # RU: курс тоже замораживается. Иначе отчёт «выручка за квартал»
-    #     пересчитается задним числом при следующем движении курса —
-    #     закрытый период менять нельзя.
-    # EN: the rate is frozen too. Otherwise a "revenue per quarter" report
-    #     would change retroactively on the next rate movement — a closed
-    #     period must not move.
+    # the rate is frozen too. Otherwise a "revenue per quarter" report
+    # would change retroactively on the next rate movement — a closed
+    # period must not move.
     exchange_rate = models.DecimalField(
         max_digits=18, decimal_places=8, editable=False, default=Decimal("1"),
         verbose_name=_("Exchange rate at booking time"),
@@ -177,10 +159,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
 
     objects = BookingQuerySet.as_manager()
 
-    # RU: смена статуса обязана идти через save(); queryset.update()
-    #     не вызывает сигналы и в историю не попадёт.
-    # EN: status changes must go through save(); queryset.update() fires
-    #     no signals and would bypass the history.
+    # status changes must go through save(); queryset.update() fires
+    # no signals and would bypass the history.
     history = HistoricalRecords()
 
     class Meta:
@@ -194,10 +174,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         ]
 
         constraints = [
-            # RU: violation_error_message (Django 4.1+) превращает нарушение
-            #     CHECK в нормальный ValidationError на этапе full_clean().
-            # EN: violation_error_message (Django 4.1+) turns a CHECK violation
-            #     into a proper ValidationError during full_clean().
+            # violation_error_message (Django 4.1+) turns a CHECK violation
+            # into a proper ValidationError during full_clean().
             models.CheckConstraint(
                 condition=Q(end_date__gt=F("start_date")),
                 name="booking_end_after_start",
@@ -231,10 +209,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
         ]
 
         indexes = [
-            # RU: единственный оставшийся индекс — ведущий listing селективен,
-            #     левый префикс обслуживает и поиск только по объявлению.
-            # EN: the only remaining index — the leading listing column is
-            #     selective and its prefix also serves listing-only lookups.
+            # serves overlap checks; the leading listing column is selective
+            # and its prefix also serves listing-only lookups.
             models.Index(
                 fields=("listing", "start_date", "end_date"),
                 name="booking_listing_dates_idx",
@@ -244,10 +220,8 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     @classmethod
     def from_db(cls, db, field_names, values):
         """
-        RU: Запоминает статус, каким он был в БД, чтобы clean() мог проверить
-            допустимость перехода из любой точки, а не только из сервиса.
-        EN: Remembers the status as stored, so clean() can validate the
-            transition from anywhere, not only from the service layer.
+        Remembers the status as stored, so clean() can validate the
+        transition from anywhere, not only from the service layer.
         """
         instance = super().from_db(db, field_names, values)
         instance._original_status = instance.status
@@ -259,22 +233,17 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
     @property
     def nights(self) -> int:
         """
-        RU: Число оплачиваемых ночей. Чистая производная от двух дат —
-            поэтому свойство, а не колонка.
-        EN: Number of chargeable nights. A pure derivation of two dates,
-            hence a property rather than a column.
+        Number of chargeable nights. A pure derivation of two dates,
+        hence a property rather than a column.
         """
         return (self.end_date - self.start_date).days
 
     def calculate_total(self) -> Money:
         """
-        RU: Единственное место с формулой суммы. Money * int и Money / int
-            возвращают Money; quantize применяем к .amount, иначе в БД уйдёт
-            число с десятком знаков и MySQL округлит его по-своему.
-        EN: The single place holding the total formula. Money * int and
-            Money / int return Money; quantize is applied to .amount, otherwise
-            a many-digit number reaches the database and MySQL rounds it
-            its own way.
+        The single place holding the total formula. Money * int and
+        Money / int return Money; quantize is applied to .amount, otherwise
+        a many-digit number reaches the database and MySQL rounds it
+        its own way.
         """
         base = self.price_per_night_snapshot * self.nights
         discounted = base * (100 - self.discount_percent) / 100
@@ -285,17 +254,14 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
 
     def can_transition_to(self, new_status: str) -> bool:
         """
-        RU: Допустим ли переход в указанный статус.
-        EN: Whether a transition to the given status is allowed.
+        Whether a transition to the given status is allowed.
         """
         return new_status in STATUS_TRANSITIONS[self.status]
 
     def is_cancellable(self) -> bool:
         """
-        RU: Не истёк ли срок отмены. Порог берётся из настроек,
-            чтобы правило не было зашито в код.
-        EN: Whether the cancellation deadline has not passed. The threshold
-            comes from settings so the rule is not hard-coded.
+        Whether the cancellation deadline has not passed. The threshold
+        comes from settings so the rule is not hard-coded.
         """
         deadline = self.start_date - timedelta(
             days=getattr(settings, "BOOKING_CANCELLATION_DAYS", 1)
@@ -304,14 +270,12 @@ class Booking(TimeStampedModel, PublicIdModel, ValidatedModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # RU: после записи текущий статус становится исходным
-        # EN: after the write the current status becomes the original one
+        # after the write the current status becomes the original one
         self._original_status = self.status
 
     def clean(self) -> None:
         """
-        RU: Правила, невыразимые CHECK-ограничением.
-        EN: Rules a CHECK constraint cannot express.
+        Rules a CHECK constraint cannot express.
         """
         errors: dict[str, ValidationError] = {}
         today = timezone.localdate()

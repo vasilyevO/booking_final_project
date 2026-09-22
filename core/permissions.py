@@ -6,10 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 class ReadOnlyOrModelPermission(permissions.DjangoModelPermissions):
     """
-    RU: Чтение открыто всем, включая анонимов; запись требует права модели,
-        то есть членства в соответствующей группе.
-    EN: Reading is open to everyone including anonymous users; writing requires
-        the model permission, i.e. membership in the matching group.
+    Reading is open to everyone including anonymous users; writing requires
+    the model permission, i.e. membership in the matching group.
     """
 
     perms_map = {
@@ -28,10 +26,8 @@ class ReadOnlyOrModelPermission(permissions.DjangoModelPermissions):
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
-    RU: Групповое право отвечает «может ли он вообще редактировать объявления»,
-        а этот класс — «его ли это объявление». Одних групп недостаточно.
-    EN: The group permission answers "may they edit listings at all", this class
-        answers "is this listing theirs". Groups alone are not enough.
+    The group permission answers "may they edit listings at all", this class
+    answers "is this listing theirs". Groups alone are not enough.
     """
 
     owner_field = "owner"
@@ -47,10 +43,8 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 class IsBookingParticipant(permissions.BasePermission):
     """
-    RU: Бронь видна только её участникам: арендатору и владельцу жилья.
-        Админ видит все.
-    EN: A booking is visible only to its participants: the tenant and the
-        property owner. Staff see everything.
+    A booking is visible only to its participants: the tenant and the
+    property owner. Staff see everything.
     """
 
     message = _("A booking is only available to its participants.")
@@ -64,8 +58,7 @@ class IsBookingParticipant(permissions.BasePermission):
 
 class IsListingOwner(permissions.BasePermission):
     """
-    RU: Подтверждать и отклонять бронь может только владелец жилья.
-    EN: Only the property owner may confirm or reject a booking.
+    Only the property owner may confirm or reject a booking.
     """
 
     message = _("Only the property owner may confirm or reject a booking.")
@@ -76,12 +69,9 @@ class IsListingOwner(permissions.BasePermission):
 
 class IsReviewAuthor(permissions.BasePermission):
     """
-    RU: Править отзыв может только автор и только в течение окна редактирования.
-        Удалять не может никто, кроме админа — иначе владелец с плохим
-        рейтингом попросит автора стереть отзыв.
-    EN: Only the author may edit a review, and only within the edit window.
-        Nobody but staff may delete — otherwise a badly rated owner would ask
-        the author to remove it.
+    Only the author may edit a review, and only within the edit window.
+    Nobody but staff may delete — otherwise a badly rated owner would ask
+    the author to remove it.
     """
 
     message = _("A review may only be edited by its author, within 14 days.")
@@ -94,3 +84,39 @@ class IsReviewAuthor(permissions.BasePermission):
         if request.method == "DELETE":
             return False
         return obj.author_id == request.user.pk and obj.is_editable
+
+class HasBookingActionPermission(permissions.BasePermission):
+    """
+    RU: Проверяет групповое право на действие с бронью. Объектные классы
+        (IsBookingParticipant, IsListingOwner) отвечают на вопрос «его ли
+        это бронь», а этот — «может ли он вообще выполнять такое действие».
+        Без него бронировать мог любой вошедший, включая чистого
+        арендодателя, а права add/confirm/reject/cancel из init_groups
+        нигде не применялись.
+    EN: Checks the group permission for a booking action. The object-level
+        classes (IsBookingParticipant, IsListingOwner) answer "is this
+        booking theirs", this one answers "may they perform the action at
+        all". Without it any signed-in user could book, including a pure
+        landlord, and the add/confirm/reject/cancel permissions granted by
+        init_groups were never enforced.
+    """
+
+    ACTION_PERMS = {
+        "create": "bookings.add_booking",
+        "confirm": "bookings.confirm_booking",
+        "reject": "bookings.reject_booking",
+        "cancel": "bookings.cancel_booking",
+    }
+    message = _("You do not have permission to perform this booking action.")
+
+    def has_permission(self, request, view) -> bool:
+        codename = self.ACTION_PERMS.get(getattr(view, "action", None))
+        # RU: list и retrieve прав группы не требуют — видимость ограничена
+        #     queryset'ом и IsBookingParticipant.
+        # EN: list and retrieve need no group permission — visibility is
+        #     limited by the queryset and IsBookingParticipant.
+        if codename is None:
+            return True
+        user = request.user
+        return bool(user and user.is_authenticated and (user.is_staff or user.has_perm(codename)))
+
