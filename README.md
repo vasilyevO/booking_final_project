@@ -200,3 +200,122 @@ docker compose exec web python manage.py test
 
 The FULLTEXT search test runs on MySQL only and is skipped on SQLite.
 Shared factories for tests live in `core/testing.py`.
+
+---
+
+# Booking API (русская версия)
+
+REST API сервиса краткосрочной аренды жилья: арендодатели публикуют объявления,
+арендаторы ищут и бронируют жильё и оставляют отзывы после проживания.
+
+Стек: Django 6.1, Django REST Framework, MySQL 8.4.
+
+## Возможности
+
+- **Пользователи** — вход по email через JWT. Роли — группы Django: `tenants`
+  бронируют и оставляют отзывы, `landlords` публикуют объявления и обрабатывают
+  заявки на бронирование.
+- **Объявления** — CRUD для владельцев, мягкое удаление, фотографии с ручной
+  сортировкой, заголовок и описание на английском, немецком и русском.
+- **Поиск** — полнотекстовый поиск MySQL (FULLTEXT) на языке запроса, фильтры по
+  городу (в любом написании: `Köln`, `Koeln`, `koln`), цене, числу комнат и типу
+  жилья. Цены хранятся в пяти валютах, фильтрация и сортировка идут в EUR.
+- **Бронирования** — защита от пересечения дат под блокировкой строки, машина
+  состояний (`pending → confirmed/rejected/cancelled`, `confirmed → completed/cancelled`),
+  зафиксированные цена и курс, email-уведомления на языке каждого получателя.
+- **Отзывы** — только по завершённым проживаниям, автор может править отзыв в
+  течение `REVIEW_EDIT_WINDOW_DAYS`, пользователи отзывы не удаляют.
+- **Аналитика** — просмотры объявлений без дублей, популярные поисковые запросы
+  и самые просматриваемые объявления.
+- **Эксплуатация** — история изменений (django-simple-history), id запроса в
+  каждой строке лога, предупреждение об N+1 запросах в режиме разработки.
+
+## Запуск в Docker
+
+```sh
+cp .env.example .env        # затем задайте SECRET_KEY и пароли
+docker compose up --build
+```
+
+Entrypoint дожидается MySQL, применяет миграции, создаёт группы ролей и
+загружает курсы валют. API обслуживает gunicorn за nginx на порту 80.
+
+Демо-данные по желанию (общий пароль пользователей — `demo-pass-2024`):
+
+```sh
+docker compose exec web python manage.py seed_demo --flush
+```
+
+## Локальный запуск
+
+```sh
+python -m venv .venv
+.venv/Scripts/activate      # Windows; в других ОС — .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env        # укажите в DB_* работающий MySQL 8.4
+
+python manage.py migrate
+python manage.py init_groups
+python manage.py update_rates
+python manage.py compilemessages
+python manage.py runserver
+```
+
+`DB_ENGINE=sqlite` переключает проект на локальный файл SQLite вместо MySQL.
+FULLTEXT-индексы при этом не создаются, поиск работает по подстроке.
+
+## API
+
+| Путь | Назначение |
+| --- | --- |
+| `/api/docs/` | Swagger UI |
+| `/api/redoc/` | ReDoc |
+| `/api/schema/` | Схема OpenAPI (также лежит в репозитории как `schema.yml`) |
+| `/api/auth/token/`, `/api/auth/token/refresh/` | Получение и обновление JWT |
+| `/api/users/register/`, `/api/users/me/` | Регистрация и свой профиль |
+| `/api/listings/` | Объявления, действия `photos/`, `photos/reorder/`, `reviews/` |
+| `/api/bookings/` | Бронирования, действия `confirm/`, `reject/`, `cancel/` |
+| `/api/reviews/` | Отзывы |
+| `/api/analytics/popular-keywords/`, `/api/analytics/popular-listings/` | Аналитика |
+
+После изменений API пересоздайте схему:
+
+```sh
+python manage.py spectacular --file schema.yml
+```
+
+## Management-команды
+
+| Команда | Назначение |
+| --- | --- |
+| `init_groups` | Создаёт группы `tenants` и `landlords` с их правами. Идемпотентна. |
+| `update_rates` | Загружает курсы валют из `EXCHANGE_BACKEND` (по умолчанию — фиксированные). |
+| `complete_bookings` | Переводит подтверждённые брони в завершённые после даты выезда. Запускать ежедневно. |
+| `seed_demo` | Генерирует демо-пользователей, объявления, брони, отзывы и аналитику. |
+
+## Настройки
+
+Все настройки задаются переменными окружения, см. `.env.example`.
+Помимо базы данных и `SECRET_KEY`:
+
+| Переменная | По умолчанию | Значение |
+| --- | --- | --- |
+| `DB_ENGINE` | `mysql` | `sqlite` — локальная база SQLite |
+| `BOOKING_CANCELLATION_DAYS` | `1` | За сколько дней до заезда бронь ещё можно отменить |
+| `REVIEW_EDIT_WINDOW_DAYS` | `14` | Сколько дней после публикации отзыв можно править |
+| `EMAIL_BACKEND` | console | Путь к email-бэкенду Django |
+| `SITE_URL` | `http://127.0.0.1:8000` | Базовый URL для ссылок в письмах |
+| `LOG_LEVEL`, `LOG_TO_FILE`, `LOG_SQL` | `INFO`, вкл., выкл. | Логирование |
+| `QUERY_COUNT_WARNING` | `20` | Число запросов к БД на один HTTP-запрос, после которого пишется предупреждение об N+1 (только при DEBUG) |
+
+## Тесты
+
+```sh
+python manage.py test                      # на MySQL из .env
+DB_ENGINE=sqlite python manage.py test     # без сервера MySQL
+```
+
+В PowerShell сначала задайте переменную: `$env:DB_ENGINE = "sqlite"`.
+
+Тест полнотекстового поиска выполняется только на MySQL, на SQLite он пропускается.
+Общие фабрики для тестов находятся в `core/testing.py`.

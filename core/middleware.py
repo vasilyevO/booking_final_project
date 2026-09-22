@@ -18,7 +18,7 @@ SKIP_PREFIXES = ("/static/", "/media/", "/favicon.ico")
 class RequestLogMiddleware:
     """
     Assigns an identifier to the request and writes one line when it ends.
-    Placed FIRST after SecurityMiddleware so every inner middleware has the
+    Placed first after SecurityMiddleware so every inner middleware has the
     id. request.user is still available because the line is written on the
     way out, after AuthenticationMiddleware has run.
     """
@@ -51,7 +51,7 @@ class RequestLogMiddleware:
         user = getattr(request, "user", None)
         actor = user.email if user is not None and user.is_authenticated else "anon"
 
-        # the request body is NOT logged: registration carries a password and
+        # the request body is not logged: registration carries a password and
         # so does /auth/token/. Once in the log it stays there in clear text,
         # and logs are protected less well than the database. The
         # Authorization header is omitted for the same reason.
@@ -75,7 +75,7 @@ class RequestLogMiddleware:
 class QueryCountMiddleware:
     """
     Warns when a single HTTP request issued too many database queries — an
-    automatic N+1 detector. Works ONLY with DEBUG=True: connection.queries
+    automatic N+1 detector. Works only with DEBUG=True: connection.queries
     is populated by the debug cursor alone.
     """
 

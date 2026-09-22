@@ -36,7 +36,7 @@ WORKDIR /app
 COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
-# create the directories BEFORE the first manage.py command — settings.py
+# create the directories before the first manage.py command — settings.py
 # may try to open the log file at import time.
 RUN mkdir -p /app/media /app/logs /app/staticfiles
 

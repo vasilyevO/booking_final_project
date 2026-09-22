@@ -196,11 +196,9 @@ class BookingTransitionApiTests(APITestCase):
 
 class BookingGroupPermissionTests(APITestCase):
     """
-    RU: Групповые права на действия с бронью. Объектные проверки (чья бронь)
-        существовали и раньше, а права групп из init_groups не применялись.
-    EN: Group permissions for booking actions. The object-level checks
-        (whose booking) already existed; the group permissions granted by
-        init_groups were never enforced.
+    Group permissions for booking actions. The object-level checks
+    (whose booking) already existed; the group permissions granted by
+    init_groups were never enforced.
     """
 
     @classmethod
@@ -226,10 +224,8 @@ class BookingGroupPermissionTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_pure_landlord_cannot_book_someone_elses_listing(self):
-        # RU: запрет своего жилья проверяет clean(); здесь чужое жильё —
-        #     отказ должен прийти от группового права, а не от clean()
-        # EN: the own-listing ban lives in clean(); this is someone else's
-        #     listing — the refusal must come from the group permission
+        # the own-listing ban lives in clean(); this is someone else's
+        # listing — the refusal must come from the group permission
         self.login(self.other_landlord)
         response = self.client.post(LIST_URL, self.payload(), format="json")
         self.assertEqual(response.status_code, 403)
@@ -240,8 +236,7 @@ class BookingGroupPermissionTests(APITestCase):
 
         both = make_user(group="landlords")
         both.groups.add(Group.objects.get(name="tenants"))
-        # RU: свежий объект — has_perm кэширует права на экземпляре
-        # EN: a fresh instance — has_perm caches permissions on the object
+        # a fresh instance — has_perm caches permissions on the object
         both = type(both).objects.get(pk=both.pk)
         self.login(both)
         response = self.client.post(LIST_URL, self.payload(), format="json")
@@ -255,10 +250,8 @@ class BookingGroupPermissionTests(APITestCase):
         self.assertEqual(booking.status, BookingStatus.PENDING)
 
     def test_owner_can_cancel_their_listings_booking(self):
-        # RU: у landlords раньше не было cancel_booking — с включённой
-        #     проверкой прав владелец потерял бы возможность отмены
-        # EN: landlords used to lack cancel_booking — with enforcement on,
-        #     the owner would have lost the ability to cancel
+        # landlords used to lack cancel_booking — with enforcement on,
+        # the owner would have lost the ability to cancel
         booking = make_booking(self.listing, self.tenant, start_offset=30)
         self.login(self.owner)
         response = self.client.post(action_url(booking, "cancel"))

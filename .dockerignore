@@ -8,7 +8,7 @@ venv/
 __pycache__/
 *.py[cod]
 
-# secrets NEVER go into an image — anyone holding it can unpack and read it.
+# secrets never go into an image — anyone holding it can unpack and read it.
 .env
 *.pem
 

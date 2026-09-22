@@ -36,7 +36,7 @@ def log_db_write(sender, instance, created: bool, raw: bool = False, **kwargs):
     """
     Logs creation and updates of any domain model.
     raw=True means fixtures are being loaded — no point logging those.
-    A receiver without sender= catches EVERY model, so the filter is a must.
+    A receiver without sender= catches every model, hence the filter.
     """
     if raw or _skip(sender):
         return

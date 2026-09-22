@@ -16,7 +16,7 @@ def notify_on_booking_created(sender, instance: Booking, created: bool, **kwargs
     if not created:
         return
 
-    # post_save fires INSIDE the transaction.atomic of create_booking().
+    # post_save fires inside the transaction.atomic of create_booking().
     # Without on_commit the email is sent even if the transaction rolls
     # back: no booking in the database, yet the tenant already has the
     # email. It cannot be recalled.
@@ -31,8 +31,8 @@ def notify_on_status_change(sender, instance: Booking, created: bool, **kwargs):
     if created:
         return
 
-    # Booking.save() assigns _original_status AFTER super().save(), while
-    # post_save is emitted INSIDE it — so here the attribute still holds the
+    # Booking.save() assigns _original_status after super().save(), while
+    # post_save is emitted inside it — so here the attribute still holds the
     # previous status. The transition is visible without pre_save and
     # without an extra database query.
     old_status = getattr(instance, "_original_status", None)

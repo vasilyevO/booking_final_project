@@ -38,7 +38,7 @@ def new_request_id() -> str:
 class RequestIdFilter(logging.Filter):
     """
     Injects request_id into every log record. The filter is attached to the
-    HANDLER rather than a logger: that way it applies to every record,
+    handler rather than a logger: that way it applies to every record,
     including those from Django and third-party libraries. Otherwise a
     format containing %(request_id)s would break on a foreign record.
     """

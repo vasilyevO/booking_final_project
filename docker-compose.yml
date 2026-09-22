@@ -19,7 +19,7 @@ services:
       # Windows host breaks MySQL on permissions, and Docker — not the host
       # filesystem — manages the data.
       - mysql_data:/var/lib/mysql
-    # the port is NOT published: on EC2 that would be a database exposed to
+    # the port is not published: on EC2 that would be a database exposed to
     # the internet. Inside the Compose network services reach each other by
     # name through the built-in DNS.
     healthcheck:

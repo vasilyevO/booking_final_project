@@ -182,7 +182,7 @@ class Listing(TimeStampedModel, SoftDeleteModel, PublicIdModel, ValidatedModel):
         verbose_name=_("Postal code"),
         help_text=_("Postal code, e.g. 50667. Optional"),
     )
-    # a MoneyField is TWO columns: price_per_night (decimal) and
+    # a MoneyField is two columns: price_per_night (decimal) and
     # price_per_night_currency (varchar(3)). In Python it is one Money.
     price_per_night = MoneyField(
         max_digits=10,

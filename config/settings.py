@@ -309,7 +309,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING" if TESTING else "INFO").upper()
 # inside a container log to stdout only: files vanish with the container,
 # and log collection is the platform's job (Docker, CloudWatch).
 LOG_TO_FILE = env_bool("LOG_TO_FILE", not env_bool("IN_CONTAINER", False))
-# SQL is emitted ONLY with DEBUG=True — Django wraps the cursor into the
+# SQL is emitted only with DEBUG=True — Django wraps the cursor into the
 # debug one in that mode alone.
 LOG_SQL = env_bool("LOG_SQL", False)
 QUERY_COUNT_WARNING = int(os.getenv("QUERY_COUNT_WARNING", "20"))

@@ -22,7 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        # never expose the internal id, otherwise public_id is pointless
+        # only public_id is exposed; the internal id stays private
         fields = ("public_id", "email", "first_name", "last_name", "phone", "groups")
         read_only_fields = ("public_id", "email", "groups")
 

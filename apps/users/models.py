@@ -52,7 +52,7 @@ class User(AbstractUser, TimeStampedModel, PublicIdModel):
     expressed through Django group membership, keeping one source of truth.
     """
 
-    # username removed — email is the identifier.
+    # no username field — email is the identifier.
     username = None
     email = models.EmailField(_("email"), unique=True)
     # for string fields prefer blank="" over null.

@@ -87,18 +87,12 @@ class IsReviewAuthor(permissions.BasePermission):
 
 class HasBookingActionPermission(permissions.BasePermission):
     """
-    RU: Проверяет групповое право на действие с бронью. Объектные классы
-        (IsBookingParticipant, IsListingOwner) отвечают на вопрос «его ли
-        это бронь», а этот — «может ли он вообще выполнять такое действие».
-        Без него бронировать мог любой вошедший, включая чистого
-        арендодателя, а права add/confirm/reject/cancel из init_groups
-        нигде не применялись.
-    EN: Checks the group permission for a booking action. The object-level
-        classes (IsBookingParticipant, IsListingOwner) answer "is this
-        booking theirs", this one answers "may they perform the action at
-        all". Without it any signed-in user could book, including a pure
-        landlord, and the add/confirm/reject/cancel permissions granted by
-        init_groups were never enforced.
+    Checks the group permission for a booking action. The object-level
+    classes (IsBookingParticipant, IsListingOwner) answer "is this
+    booking theirs", this one answers "may they perform the action at
+    all", using the add/confirm/reject/cancel permissions granted by
+    init_groups. This keeps, for example, landlord-only accounts from
+    creating bookings.
     """
 
     ACTION_PERMS = {
@@ -111,10 +105,8 @@ class HasBookingActionPermission(permissions.BasePermission):
 
     def has_permission(self, request, view) -> bool:
         codename = self.ACTION_PERMS.get(getattr(view, "action", None))
-        # RU: list и retrieve прав группы не требуют — видимость ограничена
-        #     queryset'ом и IsBookingParticipant.
-        # EN: list and retrieve need no group permission — visibility is
-        #     limited by the queryset and IsBookingParticipant.
+        # list and retrieve need no group permission — visibility is
+        # limited by the queryset and IsBookingParticipant.
         if codename is None:
             return True
         user = request.user

@@ -15,9 +15,9 @@ class ListingPhotoInline(admin.TabularInline):
 @admin.register(Listing)
 class ListingAdmin(TranslationAdmin, SimpleHistoryAdmin):
     """
-    EN: MRO order matters. TranslationAdmin comes first: it overrides form
-        rendering and adds the language tabs. SimpleHistoryAdmin only touches
-        change_view and the URLs. Swap them and the tabs disappear.
+    MRO order matters. TranslationAdmin comes first: it overrides form
+    rendering and adds the language tabs. SimpleHistoryAdmin only touches
+    change_view and the URLs. Swap them and the tabs disappear.
     """
 
     list_display = ("title", "city", "price_per_night", "rooms", "is_active", "deleted_at")
