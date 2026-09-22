@@ -287,11 +287,9 @@ class ListingPhotoApiTests(APITestCase):
 
 class ListingSearchApiTests(FullTextAPITestCase):
     """
-    RU: Поиск через API. TransactionTestCase нужен по той же причине, что и
-        в ListingSearchTests: FULLTEXT-индекс InnoDB наполняется на коммите.
-    EN: Search through the API. TransactionTestCase is required for the same
-        reason as in ListingSearchTests: the InnoDB FULLTEXT index is filled
-        on commit.
+    Search through the API. TransactionTestCase is required for the same
+    reason as in ListingSearchTests: the InnoDB FULLTEXT index is filled
+    on commit.
     """
 
     def setUp(self):

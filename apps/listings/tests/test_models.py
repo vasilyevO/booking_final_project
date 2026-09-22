@@ -114,12 +114,9 @@ class ListingQuerySetTests(BaseTestCase):
 
 class ListingSearchTests(FullTextTestCase):
     """
-    RU: Поиск через MATCH ... AGAINST. Отдельный класс на
-        TransactionTestCase: в откатываемой транзакции FULLTEXT-индекс
-        InnoDB не наполняется и любой поиск вернул бы пусто.
-    EN: Search through MATCH ... AGAINST. A separate class on
-        TransactionTestCase: inside a rolled-back transaction the InnoDB
-        FULLTEXT index is never filled and every search would return nothing.
+    Search through MATCH ... AGAINST. A separate class on
+    TransactionTestCase: inside a rolled-back transaction the InnoDB
+    FULLTEXT index is not filled, so every search would return nothing.
     """
 
     def setUp(self):
@@ -148,26 +145,20 @@ class ListingSearchTests(FullTextTestCase):
     @unittest.skipUnless(connection.vendor == "mysql", "FULLTEXT search requires MySQL")
     def test_fulltext_search_survives_operators(self):
         """
-        RU: Операторы BOOLEAN MODE обезврежены: _as_boolean_phrases берёт
-            каждое слово в кавычки, и внутри фразы парсер MySQL читает
-            символы буквально, а пунктуацию при разборе на токены
-            отбрасывает. Поэтому "++river" не ломает запрос и не меняет
-            его смысл — находится то же, что и по "river".
-        EN: BOOLEAN MODE operators are neutralised: _as_boolean_phrases puts
-            every word in quotes, and inside a phrase the MySQL parser reads
-            the characters literally while dropping punctuation during
-            tokenisation. So "++river" neither breaks the query nor changes
-            its meaning — it finds exactly what "river" finds.
+        BOOLEAN MODE operators are neutralised: _as_boolean_phrases puts
+        every word in quotes, and inside a phrase the MySQL parser reads the
+        characters literally while dropping punctuation during tokenisation.
+        A term such as "++river" therefore neither breaks the query nor
+        changes its meaning, and finds what "river" finds.
         """
         self.assertEqual(list(Listing.objects.search("river")), [self.river])
         self.assertEqual(list(Listing.objects.search("++river")), [self.river])
-        # RU: несбалансированная кавычка тоже не должна ронять запрос
-        # EN: an unbalanced quote must not break the query either
-        self.assertEqual(list(Listing.objects.search('river" -garden')), [self.river])
-        # RU: запрос из одной пунктуации превращается в пустой — и тогда
-        #     search() возвращает none(), а не падает
-        # EN: a punctuation-only term becomes empty — search() then returns
-        #     none() instead of failing
+
+        self.assertCountEqual(
+            Listing.objects.search('river" -garden'), [self.river, self.garden]
+        )
+        # a punctuation-only term becomes empty, and search() then returns
+        # none() instead of failing
         self.assertEqual(list(Listing.objects.search('"" ')), [])
 
 

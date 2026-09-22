@@ -129,28 +129,20 @@ class APITestCase(BaseTestCase):
 
 class FullTextTestCase(TransactionTestCase):
     """
-    RU: База для тестов, которым нужен настоящий COMMIT.
-        InnoDB обновляет FULLTEXT-индекс при коммите транзакции: токены
-        новых строк попадают в кэш индекса только тогда. Обычный TestCase
-        держит каждый тест в транзакции и откатывает её, поэтому
-        MATCH ... AGAINST не видит вставленные строки и возвращает пусто.
-        TransactionTestCase коммитит по-настоящему и чистит таблицы после
-        теста — медленнее, но это единственный способ проверить FULLTEXT.
-    EN: Base for tests that need a real COMMIT.
-        InnoDB updates the FULLTEXT index on transaction commit: tokens of
-        new rows reach the index cache only then. A plain TestCase keeps
-        each test inside a transaction and rolls it back, so
-        MATCH ... AGAINST cannot see the inserted rows and returns nothing.
-        TransactionTestCase commits for real and truncates the tables
-        afterwards — slower, but the only way to exercise FULLTEXT.
+    Base for tests that need a real COMMIT.
+
+    InnoDB updates the FULLTEXT index on transaction commit: tokens of new
+    rows reach the index cache only then. A plain TestCase keeps each test
+    inside a transaction and rolls it back, so MATCH ... AGAINST does not
+    see the inserted rows and returns nothing. TransactionTestCase commits
+    for real and truncates the tables afterwards: slower, and the reason
+    only the FULLTEXT tests use it.
     """
 
     def setUp(self):
         super().setUp()
-        # RU: setUpTestData у TransactionTestCase нет — данные не переживают
-        #     тест, поэтому подготовка идёт в setUp для каждого.
-        # EN: TransactionTestCase has no setUpTestData — data does not survive
-        #     a test, so the setup runs in setUp for every one of them.
+        # TransactionTestCase has no setUpTestData: the data does not survive
+        # a test, so the setup runs in setUp for every one of them.
         call_command("init_groups", stdout=StringIO())
         call_command("update_rates", stdout=StringIO())
         cache.clear()
